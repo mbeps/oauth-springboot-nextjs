@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-OauthApplication<oauth-backend>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/backend",
+      "mainClass": "com.maruf.oauth.OauthApplication",
+      "projectName": "oauth-backend",
+      "args": "",
+      "vmArgs": "-Dspring.config.additional-location=${workspaceFolder}/backend/application.yaml",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
