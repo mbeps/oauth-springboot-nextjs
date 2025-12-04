@@ -10,6 +10,40 @@
       "args": "",
       "vmArgs": "-Dspring.config.additional-location=${workspaceFolder}/backend/application.yaml",
       "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "name": "Next.js: debug server-side",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "yarn dev",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    {
+      "name": "Next.js: debug client-side",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000"
+    },
+    {
+      "name": "Next.js: debug full stack",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "yarn dev",
+      "cwd": "${workspaceFolder}/frontend",
+      "serverReadyAction": {
+        "pattern": "- Local:.+(https?://.+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run backend + frontend",
+      "configurations": [
+        "Spring Boot-OauthApplication<oauth-backend>",
+        "Next.js: debug server-side"
+      ]
     }
   ]
 }
