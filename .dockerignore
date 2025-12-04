@@ -1,0 +1,8 @@
+.git
+**/node_modules
+**/.next
+**/.gradle
+**/build
+**/target
+**/.DS_Store
+**/*.log
