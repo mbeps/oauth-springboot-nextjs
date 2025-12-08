@@ -2,11 +2,10 @@ import { apiClient } from '../api-client';
 import type { PublicData } from '@/types/public-data';
 
 /**
- * Fetches non-sensitive data accessible to all users.
- * Typically used for health checks and public information.
- * @async
- * @returns {Promise<PublicData>} Public data from backend
- * @throws {AxiosError} If request fails
+ * Gets public health data from the backend.
+ * Used by the landing page to confirm connectivity.
+ * @returns Promise that resolves with public payload.
+ * @author Maruf Bepary
  */
 export async function fetchPublicData(): Promise<PublicData> {
   const response = await apiClient.get<PublicData>('/api/public/health');

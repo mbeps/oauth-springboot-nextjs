@@ -1,12 +1,13 @@
 /**
- * Response from protected data endpoint.
- * Contains authorization-sensitive data that requires valid access token.
- * @property {string} message - Description or status message from backend
- * @property {string} user - Username or identifier of the authenticated user
- * @property {object} [data] - Additional protected data payload (optional)
- * @property {string[]} [data.items] - Array of data items
- * @property {number} [data.count] - Count or total number
- * @property {number} [data.lastUpdated] - Timestamp of last data update
+ * Payload returned when calling the protected API.
+ * Only available when the jwt cookie is valid.
+ * @property message Status message for the secured request.
+ * @property user Authenticated username echoed by the backend.
+ * @property data Optional payload with demo content from the server.
+ * @property data.items Optional list of protected items.
+ * @property data.count Optional count for the payload.
+ * @property data.lastUpdated Optional timestamp of the demo data.
+ * @author Maruf Bepary
  */
 export interface ProtectedData {
   message: string;

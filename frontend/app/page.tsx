@@ -24,10 +24,9 @@ import { toast } from "sonner";
 import { FaGithub, FaMicrosoft } from "react-icons/fa";
 
 /**
- * Home page component - login and public information page.
- * Displays OAuth login buttons and Email/Password form if enabled.
- * Redirects authenticated users to dashboard.
- * @returns Home page with login options and public data
+ * Landing page that shows login options and public status.
+ * Redirects signed-in users to the dashboard.
+ * @returns Home view with OAuth and local auth flows.
  * @author Maruf Bepary
  */
 export default function Home() {
@@ -68,6 +67,12 @@ export default function Home() {
     loadData();
   }, []);
 
+  /**
+   * Picks an icon for the given provider key.
+   * @param key Provider identifier from the backend.
+   * @returns Matching icon element or null.
+   * @author Maruf Bepary
+   */
   const getProviderIcon = (key: string) => {
     if (key === "github") {
       return <FaGithub className="w-5 h-5 mr-2" />;
@@ -78,6 +83,13 @@ export default function Home() {
     return null;
   };
 
+  /**
+   * Handles login or signup via email credentials.
+   * @param e Submit event from the form.
+   * @param isLogin Flag to choose login or signup flow.
+   * @returns Promise that resolves after auth attempt.
+   * @author Maruf Bepary
+   */
   const handleEmailAuth = async (e: React.FormEvent, isLogin: boolean) => {
     e.preventDefault();
     setAuthLoading(true);
@@ -99,8 +111,8 @@ export default function Home() {
   /**
    * Attempts to perform a protected action (requires authentication).
    * Shows success toast if successful or error toast if unauthenticated.
-   * @async
-   * @param action Action identifier to execute on backend
+   * @param action Action identifier to execute on backend.
+   * @returns Promise that resolves after the attempt.
    * @author Maruf Bepary
    */
   const handleTestAction = async (action: string) => {

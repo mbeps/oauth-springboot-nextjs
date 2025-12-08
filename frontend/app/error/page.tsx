@@ -2,9 +2,8 @@ import React, { Suspense } from 'react';
 import ErrorClient from './ErrorClient';
 
 /**
- * Error page wrapper with Suspense boundary for authentication errors.
- * Wraps client component that reads error query parameters.
- * @returns Error page with fallback loading state
+ * Error page that wraps the client reader in Suspense.
+ * @returns Error view with a simple loading fallback.
  * @author Maruf Bepary
  */
 export default function ErrorPage() {

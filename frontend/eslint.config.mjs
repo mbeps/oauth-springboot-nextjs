@@ -9,6 +9,11 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
+/**
+ * ESLint flat config tailored for the Next.js frontend.
+ * Ignores build artifacts and generated files.
+ * @author Maruf Bepary
+ */
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {

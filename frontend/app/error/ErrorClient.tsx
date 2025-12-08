@@ -6,10 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Link from 'next/link';
 
 /**
- * Client-side error page component for displaying authentication errors.
- * Reads error code from URL query parameters and displays appropriate message.
- * Provides navigation options to retry or return home.
- * @returns Error message card with retry options
+ * Client error screen that surfaces auth failures.
+ * Reads the `error` query and maps it to friendly text.
+ * @returns Error card with retry links.
  * @author Maruf Bepary
  */
 export default function ErrorClient() {
@@ -17,10 +16,9 @@ export default function ErrorClient() {
   const error = searchParams.get('error');
 
   /**
-   * Returns user-friendly error message based on error code.
-   * Maps backend error types to readable descriptions.
-   * @param errorType Error code from query parameter
-   * @returns User-friendly error message
+   * Maps error codes to readable messages.
+   * @param errorType Code from the query string.
+   * @returns Message to display on the page.
    * @author Maruf Bepary
    */
   const getErrorMessage = (errorType: string | null) => {

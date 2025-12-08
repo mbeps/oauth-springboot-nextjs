@@ -1,5 +1,6 @@
 /**
- * Public routes that don't require authentication
+ * Public routes that stay open to all visitors.
+ * @author Maruf Bepary
  */
 export const publicRoutes = [
   '/',
@@ -7,13 +8,15 @@ export const publicRoutes = [
 ];
 
 /**
- * Routes that require authentication
+ * Routes that require a valid session cookie.
+ * @author Maruf Bepary
  */
 export const protectedRoutes = [
   '/dashboard',
 ];
 
 /**
- * Default redirect after successful login
+ * Default redirect after a successful login.
+ * @author Maruf Bepary
  */
 export const DEFAULT_LOGIN_REDIRECT = '/dashboard';

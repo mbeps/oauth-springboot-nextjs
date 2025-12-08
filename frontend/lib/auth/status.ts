@@ -2,10 +2,10 @@ import { apiClient } from '../api-client';
 import type { AuthStatus } from '@/types/auth-status';
 
 /**
- * Checks current authentication status with backend.
- * Returns user details if authenticated, or unverified status if check fails.
- * @async
- * @returns {Promise<AuthStatus>} Authentication status with optional user data
+ * Calls `/api/auth/status` to mirror backend session state.
+ * Falls back to unauthenticated when the check fails.
+ * @returns Promise that resolves with auth status data.
+ * @author Maruf Bepary
  */
 export async function checkAuthStatus(): Promise<AuthStatus> {
   try {

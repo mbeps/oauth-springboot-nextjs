@@ -1,10 +1,11 @@
 import type { User } from './user';
 
 /**
- * Response from authentication status check endpoint.
- * Indicates whether a user is currently authenticated and their details.
- * @property {boolean} authenticated - Whether the current session is authenticated
- * @property {User} [user] - User details if authenticated (optional)
+ * Result returned by `/api/auth/status`.
+ * Tells the UI if a session is live and who is logged in.
+ * @property authenticated Flag showing session validity.
+ * @property user Optional user payload from the backend.
+ * @author Maruf Bepary
  */
 export interface AuthStatus {
   authenticated: boolean;
