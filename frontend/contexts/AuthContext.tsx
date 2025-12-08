@@ -1,7 +1,14 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { checkAuthStatus, type AuthStatus, type User } from '@/lib/auth';
+import { checkAuthStatus } from "@/lib/auth/status";
+import type { User } from "@/types/user";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 /**
  * Type definition for authentication context value.
@@ -48,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthenticated(status.authenticated);
       setUser(status.user || null);
     } catch (error) {
-      console.error('Auth refresh failed:', error);
+      console.error("Auth refresh failed:", error);
       setAuthenticated(false);
       setUser(null);
     } finally {
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

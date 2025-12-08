@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchProtectedData, performAction, logout, type ProtectedData } from '@/lib/auth';
+import { fetchProtectedData } from '@/lib/auth/protected/fetch-protected-data';
+import { performAction } from '@/lib/auth/protected/perform-action';
+import { logout } from '@/lib/auth/logout';
+import type { ProtectedData } from '@/types/protected-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -27,7 +30,7 @@ export default function Dashboard() {
         try {
           const data = await fetchProtectedData();
           setProtectedData(data);
-        } catch (error) {
+        } catch {
           setError('Failed to load protected data');
           toast.error('Failed to load protected data');
         }
@@ -49,13 +52,13 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const result = await performAction(action);
+      await performAction(action);
       toast.success(`Action '${action}' completed successfully`);
 
       // Refresh protected data
       const data = await fetchProtectedData();
       setProtectedData(data);
-    } catch (error) {
+    } catch {
       const errorMessage = `Failed to perform action: ${action}`;
       setError(errorMessage);
       toast.error(errorMessage);
@@ -73,7 +76,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (err) {
+    } catch {
       toast.error('Logout failed');
     }
   };

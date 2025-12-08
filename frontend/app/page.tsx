@@ -10,16 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  fetchPublicData,
-  performAction,
-  fetchProviders,
-  loginWithProvider,
-  loginWithEmail,
-  signupWithEmail,
-  type PublicData,
-  type OAuthProvider,
-} from "@/lib/auth";
+import { fetchPublicData } from "@/lib/auth/public";
+import { performAction } from "@/lib/auth/protected/perform-action";
+import { fetchProviders } from "@/lib/auth/providers/fetch-providers";
+import { loginWithProvider } from "@/lib/auth/providers/login-with-provider";
+import { loginWithEmail } from "@/lib/auth/local-auth/login";
+import { signupWithEmail } from "@/lib/auth/local-auth/signup";
+import type { PublicData } from "@/types/public-data";
+import type { OAuthProvider } from "@/types/oauth-provider";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -89,7 +87,7 @@ export default function Home() {
       } else {
         await signupWithEmail(email, password, name);
       }
-    } catch (error) {
+    } catch {
       toast.error(isLogin ? "Login failed" : "Signup failed", {
         description: "Please check your credentials and try again",
       });
@@ -111,7 +109,7 @@ export default function Home() {
     try {
       await performAction(action);
       toast.success(`Action '${action}' completed successfully`);
-    } catch (error) {
+    } catch {
       toast.error("Authentication required", {
         description: "You must be logged in to perform this action",
       });
