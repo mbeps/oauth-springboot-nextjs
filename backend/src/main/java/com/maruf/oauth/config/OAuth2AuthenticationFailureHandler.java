@@ -14,15 +14,28 @@ import java.io.IOException;
 
 /**
  * Logs OAuth2 authentication failures with detailed diagnostics and redirects to the frontend.
+ *
+ * @author Maruf Bepary
  */
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
+    /**
+     * Frontend base URL loaded from {@code frontend.url}; defaults to {@code http://localhost:3000}.
+     *
+     * @author Maruf Bepary
+     */
     @Value("${frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
+    /**
+     * Logs the failure reason and redirects to the frontend with an error flag.
+     * Captures OAuth specific error codes when available for easier debugging.
+     *
+     * @author Maruf Bepary
+     */
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,

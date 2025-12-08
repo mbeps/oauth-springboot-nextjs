@@ -60,13 +60,29 @@ public class AuthController {
     private final ClientRegistrationRepository clientRegistrationRepository;
     private final LocalAuthService localAuthService;
 
+    /**
+     * Flag controlling whether email/password endpoints are exposed.
+     * Read from {@code app.security.local-auth.enabled}; defaults to {@code false}.
+     *
+     * @author Maruf Bepary
+     */
     @Value("${app.security.local-auth.enabled:false}")
     private boolean localAuthEnabled;
 
-    @Value("${jwt.access-token-expiration:900000}") // 15 minutes
+    /**
+     * Access token TTL in milliseconds from {@code jwt.access-token-expiration}; defaults to 15 minutes.
+     *
+     * @author Maruf Bepary
+     */
+    @Value("${jwt.access-token-expiration:900000}") 
     private Long accessTokenExpiration;
-    
-    @Value("${jwt.refresh-token-expiration:604800000}") // 7 days
+
+    /**
+     * Refresh token TTL in milliseconds from {@code jwt.refresh-token-expiration}; defaults to 7 days.
+     *
+     * @author Maruf Bepary
+     */
+    @Value("${jwt.refresh-token-expiration:604800000}")
     private Long refreshTokenExpiration;
 
     /**
@@ -78,8 +94,7 @@ public class AuthController {
      */
     @GetMapping("/api/auth/status")
     public ResponseEntity<AuthStatusResponse> getAuthStatus(@AuthenticationPrincipal OAuth2User principal) {
-        
-        if (principal != null) {
+        if (principal != null) { // user is authenticated
             UserResponse user = UserResponse.builder()
                     .id(OAuth2AttributeExtractor.getUserId(principal))
                     .login(OAuth2AttributeExtractor.resolveUsername(principal))
@@ -96,7 +111,7 @@ public class AuthController {
                     .user(user)
                     .build()
             );
-        } else {
+        } else { // user is not authenticated
             log.info("Auth status checked - user not authenticated");
             return ResponseEntity.ok(
                 AuthStatusResponse.builder()
@@ -217,6 +232,7 @@ public class AuthController {
      * Used by the frontend to dynamically render login buttons.
      *
      * @return List of provider details (key, name)
+     * @author Maruf Bepary
      */
     @GetMapping("/api/auth/providers")
     public ResponseEntity<List<Map<String, String>>> getProviders() {
@@ -241,6 +257,13 @@ public class AuthController {
         return ResponseEntity.ok(providers);
     }
 
+    /**
+     * Registers a new user when local authentication is enabled and issues tokens on success.
+     * Returns HTTP 403 if the feature is disabled.
+     *
+     * @param signupRequest validated signup payload containing email, password, and name
+     * @author Maruf Bepary
+     */
     @PostMapping("/api/auth/signup")
     public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest signupRequest) {
         if (!localAuthEnabled) {
@@ -261,6 +284,13 @@ public class AuthController {
         }
     }
 
+    /**
+     * Authenticates a local user and issues JWT cookies when credentials match.
+     * Returns HTTP 403 when local auth is disabled and 401 when credentials are invalid.
+     *
+     * @param loginRequest validated login payload containing email and password
+     * @author Maruf Bepary
+     */
     @PostMapping("/api/auth/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         if (!localAuthEnabled) {
@@ -278,6 +308,14 @@ public class AuthController {
                         .build()));
     }
 
+    /**
+     * Issues access and refresh tokens for the given user and persists refresh token state.
+     * Builds consistent cookies using the shared {@link HttpCookieFactory}.
+     *
+     * @param user authenticated user entity
+     * @return response containing cookies and a success flag
+     * @author Maruf Bepary
+     */
     private ResponseEntity<?> authenticateUser(User user) {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("id", user.getId());
@@ -319,6 +357,16 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
+    /**
+     * Replaces the presented refresh token with a new one and updates persistence accordingly.
+     * Called only when rotation is enabled to enforce single-use refresh tokens.
+     *
+     * @param response HTTP response used to publish the rotated cookie
+     * @param currentRefreshToken existing refresh token to invalidate
+     * @param username username associated with the session
+     * @param refreshClaims claims to embed in the new refresh token
+     * @author Maruf Bepary
+     */
     private void rotateRefreshToken(HttpServletResponse response, String currentRefreshToken, String username, Map<String, Object> refreshClaims) {
         refreshTokenStore.invalidateRefreshToken(currentRefreshToken);
 

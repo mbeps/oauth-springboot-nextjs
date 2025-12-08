@@ -35,7 +35,7 @@ public class RefreshTokenStore {
      * Saves a refresh token record with creation and usage timestamps.
      * Writes to MongoDB so multiple application instances can share token state.
      *
-     * @param token     refresh token string generated for the session
+     * @param token refresh token string generated for the session
      * @param username  account owner associated with the token
      * @param expiresAt expiration moment tracked for cleanup
      * @author Maruf Bepary
@@ -89,7 +89,7 @@ public class RefreshTokenStore {
      * Persists an invalidated access token to protect against replay until it naturally expires.
      * Stores the username and reason for auditing.
      *
-     * @param token     access token string that should no longer authenticate requests
+     * @param token access token string that should no longer authenticate requests
      * @param username  principal associated with the invalidated token
      * @param expiresAt expiration instant copied from the JWT payload
      * @author Maruf Bepary
@@ -118,6 +118,14 @@ public class RefreshTokenStore {
         return invalidatedTokenRepository.existsByToken(token);
     }
 
+    /**
+     * Hashes refresh tokens when hashing is enabled to avoid storing raw tokens.
+     * Uses SHA-256 and URL-safe Base64 encoding; returns plain token when hashing is disabled.
+     *
+     * @param token raw refresh token value received from the client
+     * @return hashed or original token depending on configuration
+     * @author Maruf Bepary
+     */
     private String applyHash(String token) {
         if (!refreshTokenSecurityProperties.isHashingEnabled()) {
             return token;
@@ -131,6 +139,14 @@ public class RefreshTokenStore {
         }
     }
 
+    /**
+     * Fetches a refresh token record using the configured hashing strategy.
+     * Encapsulates hashing so callers do not repeat the logic.
+     *
+     * @param token refresh token supplied by the client
+     * @return optional refresh token document when found
+     * @author Maruf Bepary
+     */
     private Optional<RefreshToken> findTokenRecord(String token) {
         String hashedToken = applyHash(token);
         return refreshTokenRepository.findByToken(hashedToken);

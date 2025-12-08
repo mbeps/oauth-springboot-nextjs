@@ -47,6 +47,12 @@ public class SecurityConfig {
     private final HttpCookieFactory cookieFactory;
     private final OAuth2AuthenticationFailureHandler oauth2FailureHandler;
 
+    /**
+     * Provides BCrypt password encoding for local authentication.
+     *
+     * @return configured {@link PasswordEncoder} bean
+     * @author Maruf Bepary
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -139,7 +145,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // TODO: Do not hardcode read from application.yaml
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Content-Type", "Authorization"));
         configuration.setAllowCredentials(true);

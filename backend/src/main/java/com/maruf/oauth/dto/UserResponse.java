@@ -16,9 +16,38 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponse {
+    /**
+     * Provider-specific identifier for the user.
+     *
+     * @author Maruf Bepary
+     */
     private String id;
+
+    /**
+     * Username or login handle displayed in the app.
+     *
+     * @author Maruf Bepary
+     */
     private String login;
+
+    /**
+     * Display name for UI rendering.
+     *
+     * @author Maruf Bepary
+     */
     private String name;
+
+    /**
+     * Primary email address.
+     *
+     * @author Maruf Bepary
+     */
     private String email;
+
+    /**
+     * Avatar URL if provided by the identity provider.
+     *
+     * @author Maruf Bepary
+     */
     private String avatarUrl;
 }

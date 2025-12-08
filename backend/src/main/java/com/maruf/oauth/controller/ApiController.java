@@ -48,10 +48,12 @@ public class ApiController {
     @GetMapping("/api/user")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getUser(@AuthenticationPrincipal OAuth2User principal) {
+        // check if user is authenticated
         if (principal == null) {
             log.warn("Unauthenticated access attempt to /api/user");
             return ResponseEntity.status(401).build();
         }
+        // autheticated user info
         UserResponse response = UserResponse.builder()
                 .id(OAuth2AttributeExtractor.getUserId(principal))
                 .login(OAuth2AttributeExtractor.resolveUsername(principal))
@@ -80,6 +82,7 @@ public class ApiController {
         }
         String username = OAuth2AttributeExtractor.resolveUsername(principal);
 
+        // mock data
         ProtectedDataResponse.DataContent dataContent = ProtectedDataResponse.DataContent.builder()
                 .items(new String[]{"Item 1", "Item 2", "Item 3"})
                 .count(3)

@@ -37,13 +37,28 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final RefreshTokenStore refreshTokenStore;
     private final HttpCookieFactory cookieFactory;
 
+    /**
+     * Frontend base URL loaded from {@code frontend.url}; defaults to {@code http://localhost:3000}.
+     *
+     * @author Maruf Bepary
+     */
     @Value("${frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
-    @Value("${jwt.access-token-expiration:900000}") // 15 minutes
+    /**
+     * Access token lifetime in milliseconds from {@code jwt.access-token-expiration}; default 15 minutes.
+     *
+     * @author Maruf Bepary
+     */
+    @Value("${jwt.access-token-expiration:900000}") 
     private Long accessTokenExpiration;
 
-    @Value("${jwt.refresh-token-expiration:604800000}") // 7 days
+    /**
+     * Refresh token lifetime in milliseconds from {@code jwt.refresh-token-expiration}; default 7 days.
+     *
+     * @author Maruf Bepary
+     */
+    @Value("${jwt.refresh-token-expiration:604800000}") 
     private Long refreshTokenExpiration;
 
     /**

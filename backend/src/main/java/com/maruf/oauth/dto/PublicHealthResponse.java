@@ -16,7 +16,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PublicHealthResponse {
+    /**
+     * Service health indicator, e.g., {@code "UP"}.
+     *
+     * @author Maruf Bepary
+     */
     private String status;
+
+    /**
+     * Additional message describing the status.
+     *
+     * @author Maruf Bepary
+     */
     private String message;
+
+    /**
+     * Epoch timestamp when the status was generated.
+     *
+     * @author Maruf Bepary
+     */
     private Long timestamp;
 }
