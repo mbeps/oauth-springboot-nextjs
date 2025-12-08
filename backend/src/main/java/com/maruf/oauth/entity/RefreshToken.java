@@ -32,7 +32,7 @@ public class RefreshToken {
     @Indexed
     private String username;
     
-    @Indexed(expireAfterSeconds = 0)
+    @Indexed(expireAfter = "0s")
     private Instant expiresAt;
     
     private Instant createdAt;

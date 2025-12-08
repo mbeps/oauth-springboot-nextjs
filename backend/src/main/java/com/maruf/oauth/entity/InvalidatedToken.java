@@ -51,8 +51,7 @@ public class InvalidatedToken {
      *
      * @author Maruf Bepary
      */
-    // TODO: Deprecated needs to be replaced
-    @Indexed(expireAfterSeconds = 0)
+    @Indexed(expireAfter = "0s")
     private Instant expiresAt;
     
     /**
