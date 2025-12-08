@@ -1,7 +1,9 @@
 /**
- * Represents an OAuth provider configuration.
- * @property {string} key - Provider identifier (e.g., "github", "azure")
- * @property {string} name - Display name of the provider
+ * Metadata for an OAuth provider exposed by `/api/auth/providers`.
+ * Powers the dynamic login buttons on the landing page.
+ * @property key Identifier such as `github` or `azure`.
+ * @property name Label shown on the provider button.
+ * @author Maruf Bepary
  */
 export interface OAuthProvider {
   key: string;

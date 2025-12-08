@@ -12,10 +12,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 /**
- * Protected dashboard page for authenticated users.
- * Displays user profile, protected data, and action controls.
- * Shows user avatar, GitHub profile details, and backend-provided data.
- * @returns Dashboard with user info and protected resources
+ * Dashboard for authenticated users.
+ * Renders profile info, protected data, and action buttons.
+ * @returns Dashboard view with secure content.
  * @author Maruf Bepary
  */
 export default function Dashboard() {
@@ -43,8 +42,8 @@ export default function Dashboard() {
   /**
    * Executes a protected action and refreshes displayed data.
    * Shows success/error toast notification based on outcome.
-   * @param action Action identifier to execute on backend
-   * @async
+   * @param action Action identifier to execute on backend.
+   * @returns Promise that resolves after the action.
    * @author Maruf Bepary
    */
   const handleAction = async (action: string) => {
@@ -70,7 +69,7 @@ export default function Dashboard() {
   /**
    * Logs out current user and invalidates session.
    * Clears tokens and redirects to home page.
-   * @async
+   * @returns Promise that resolves after redirect.
    * @author Maruf Bepary
    */
   const handleLogout = async () => {

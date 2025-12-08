@@ -1,11 +1,10 @@
 import { apiClient } from '../api-client';
 
 /**
- * Logs out current user and clears session.
- * Invalidates tokens on backend and redirects to home page.
- * Redirects to home even if logout request fails for security.
- * @async
- * @returns {Promise<void>}
+ * Ends the session and routes back to the home page.
+ * Redirects even when logout fails so stale tokens do not linger.
+ * @returns Promise that resolves after navigation.
+ * @author Maruf Bepary
  */
 export async function logout() {
   try {

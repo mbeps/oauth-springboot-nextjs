@@ -11,8 +11,8 @@ import {
 } from "react";
 
 /**
- * Type definition for authentication context value.
- * Provides authentication state and methods to child components.
+ * Auth context value that mirrors backend session state.
+ * Keeps user info and auth flags in memory for the UI.
  * @author Maruf Bepary
  */
 interface AuthContextType {
@@ -23,19 +23,17 @@ interface AuthContextType {
 }
 
 /**
- * React Context for managing authentication state across application.
- * Stores user data, authentication status, and loading state.
+ * Context that shares auth state across the app tree.
+ * Used by the provider and the `useAuth` hook.
  * @author Maruf Bepary
- * @type {React.Context<AuthContextType|undefined>}
  */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
- * Provider component that wraps application with authentication state.
- * Automatically checks auth status on mount and provides it to children.
- * @param props Component props
- * @param props.children Child components to wrap
- * @returns Provider component with context
+ * Wraps the app with auth state from `/api/auth/status`.
+ * Checks status on mount and exposes a refresh helper.
+ * @param children Nodes to render inside the provider.
+ * @returns Provider element that supplies auth context.
  * @author Maruf Bepary
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -44,9 +42,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   /**
-   * Fetches current auth status and updates context state.
-   * Used for initial check and manual auth state refresh.
-   * @async
+   * Pulls the latest auth state from the backend.
+   * Resets user data when the session is invalid.
+   * @returns Promise that resolves after state sync.
    * @author Maruf Bepary
    */
   const refreshAuth = async () => {
@@ -76,9 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 /**
  * Custom hook to access authentication context.
- * Must be used within AuthProvider component tree.
- * @returns Authentication state and methods
- * @throws {Error} If used outside AuthProvider
+ * Must be used within the AuthProvider tree.
+ * @returns Auth state and helpers from the context.
+ * @throws Error when used without a surrounding AuthProvider.
  * @author Maruf Bepary
  */
 export function useAuth() {

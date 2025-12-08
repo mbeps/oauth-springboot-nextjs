@@ -9,10 +9,11 @@ let failedQueue: Array<{
 }> = [];
 
 /**
- * Processes the queue of failed requests during token refresh.
- * Resolves or rejects queued promises based on refresh outcome.
+ * Resolves queued requests once refresh completes.
+ * Rejects the queue when refresh fails.
+ * @param error Error to propagate when refresh fails.
+ * @returns Nothing. Clears the local queue.
  * @author Maruf Bepary
- * @param Error if refresh failed, null if successful.
  */
 const processQueue = (error: Error | null = null): void => {
   failedQueue.forEach(prom => {
@@ -28,9 +29,8 @@ const processQueue = (error: Error | null = null): void => {
 
 
 /**
- * Axios HTTP client for communicating with the Spring Boot backend.
- * Handles authentication, token refresh, and error management.
- * Used for all API requests from the frontend.
+ * Axios client configured for the Spring Boot backend.
+ * Carries credentials and JSON defaults for every call.
  * @author Maruf Bepary
  */
 export const apiClient = axios.create({
@@ -43,16 +43,19 @@ export const apiClient = axios.create({
 
 
 /**
- * Response interceptor for global error handling and token refresh.
- * Refreshes tokens on 401 errors and retries requests as needed.
- * Only attempts refresh if a refresh token cookie exists.
- * @param response Axios response object.
- * @param error Axios error object.
- * @returns Response or rejected promise.
- * @author Maruf Reformátory
+ * Response interceptor that retries requests after refresh.
+ * Skips refresh loops for refresh and status endpoints.
+ * @returns Response or rejected promise for the caller.
+ * @author Maruf Bepary
  */
 apiClient.interceptors.response.use(
   (response) => response,
+  /**
+   * Handles failed responses and retries after refresh when needed.
+   * @param error Error returned by Axios.
+   * @returns Response retry or rejection to propagate.
+   * @author Maruf Bepary
+   */
   async (error) => {
     const originalRequest = error.config;
 
@@ -117,13 +120,13 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Request interceptor (if needed for future enhancements)
+/**
+ * Request interceptor reserved for future headers.
+ * @param config Outgoing request configuration.
+ * @returns Request config to continue the chain.
+ * @author Maruf Bepary
+ */
 apiClient.interceptors.request.use(
-  (config) => {
-    // Could add tokens or other headers here in the future
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (config) => config,
+  (error) => Promise.reject(error)
 );

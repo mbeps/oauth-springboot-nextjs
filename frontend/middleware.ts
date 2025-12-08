@@ -1,19 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Routes that don't require authentication
+/**
+ * Routes that stay accessible without a session.
+ * @author Maruf Bepary
+ */
 const publicRoutes = ['/', '/error'];
 
-// Routes that require authentication
+/**
+ * Routes that require a valid jwt cookie.
+ * @author Maruf Bepary
+ */
 const protectedRoutes = ['/dashboard'];
 
 /**
- * Next.js middleware for server-side route protection.
- * Validates JWT cookie presence for protected routes.
- * Redirects unauthenticated users to home page when accessing protected areas.
- * Backend validates token integrity and expiry.
- * @param request  Incoming HTTP request
- * @returns Response to continue or redirect request
+ * Guards protected routes by checking the `jwt` cookie.
+ * Lets public paths through and redirects others when missing auth.
+ * @param request Incoming request from Next.js.
+ * @returns Response that continues or redirects the request.
  * @author Maruf Bepary
  */
 export function middleware(request: NextRequest) {
@@ -50,7 +54,10 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Configure which routes to run middleware on
+/**
+ * Matcher config to scope middleware execution.
+ * @author Maruf Bepary
+ */
 export const config = {
   matcher: [
     // Skip Next.js internals and static files

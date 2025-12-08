@@ -1,10 +1,12 @@
 /**
- * Represents an authenticated user from OAuth provider.
- * @property {number} id - Unique identifier for the user
- * @property {string} login - User login/username from OAuth provider
- * @property {string} name - Full name of the user
- * @property {string} [email] - User email address (optional)
- * @property {string} avatarUrl - URL to user's avatar/profile picture
+ * User profile returned after OAuth or local login.
+ * Drives avatar, display name, and contact details on the UI.
+ * @property id Identifier from the provider or local store.
+ * @property login Username shown on dashboards and calls.
+ * @property name Full name used for friendly greetings.
+ * @property email Optional email from the provider.
+ * @property avatarUrl Optional avatar rendered on the dashboard.
+ * @author Maruf Bepary
  */
 export interface User {
   id: string;

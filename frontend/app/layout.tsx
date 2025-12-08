@@ -21,12 +21,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Root layout component for entire application.
- * Sets up global providers: theme, authentication, and toast notifications.
- * Applied to all pages via Next.js App Router.
- * @param props Component props
- * @param props.children Page content to render
- * @returns HTML document with nested providers
+ * Root layout that wires fonts, theming, auth, and toasts.
+ * Applies to every route in the App Router.
+ * @param children Page content to render.
+ * @returns HTML document with global providers.
  * @author Maruf Bepary
  */
 export default function RootLayout({
