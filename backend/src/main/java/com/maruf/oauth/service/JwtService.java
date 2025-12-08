@@ -25,13 +25,29 @@ import java.util.Map;
 @Slf4j
 public class JwtService {
 
+    /**
+     * HMAC signing secret loaded from {@code jwt.secret} in application properties.
+     * Must be long enough for HS256 keys.
+     *
+     * @author Maruf Bepary
+     */
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.access-token-expiration:900000}") // Default 15 minutes
+    /**
+     * Access token lifetime in milliseconds from {@code jwt.access-token-expiration}; defaults to 15 minutes.
+     *
+     * @author Maruf Bepary
+     */
+    @Value("${jwt.access-token-expiration:900000}") 
     private Long accessTokenExpiration;
 
-    @Value("${jwt.refresh-token-expiration:604800000}") // Default 7 days
+    /**
+     * Refresh token lifetime in milliseconds from {@code jwt.refresh-token-expiration}; defaults to 7 days.
+     *
+     * @author Maruf Bepary
+     */
+    @Value("${jwt.refresh-token-expiration:604800000}")
     private Long refreshTokenExpiration;
 
     /**
@@ -73,6 +89,7 @@ public class JwtService {
      * @param username unique user identifier used as the JWT subject
      * @param additionalClaims optional profile claims to embed in the refresh token
      * @return signed refresh token string
+     * @author Maruf Bepary
      */
     public String generateRefreshToken(String username, Map<String, Object> additionalClaims) {
         Map<String, Object> claims = new HashMap<>(additionalClaims);
@@ -93,7 +110,7 @@ public class JwtService {
      *
      * @param oauth2User authenticated user whose attributes become token claims
      * @param expiration lifetime in milliseconds from now for the token
-     * @param type       token classification recorded in the {@code type} claim
+     * @param type token classification recorded in the {@code type} claim
      * @author Maruf Bepary
      */
     private String generateToken(OAuth2User oauth2User, Long expiration, String type) {

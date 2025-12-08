@@ -16,6 +16,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuthStatusResponse {
+    /**
+     * Indicates whether the requester is authenticated.
+     *
+     * @author Maruf Bepary
+     */
     private boolean authenticated;
+
+    /**
+     * Profile details returned when authenticated; {@code null} otherwise.
+     *
+     * @author Maruf Bepary
+     */
     private UserResponse user;
 }

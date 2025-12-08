@@ -16,6 +16,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ErrorResponse {
+    /**
+     * Machine-readable error code for client logic.
+     *
+     * @author Maruf Bepary
+     */
     private String error;
+
+    /**
+     * Human-readable description of the error.
+     *
+     * @author Maruf Bepary
+     */
     private String message;
 }

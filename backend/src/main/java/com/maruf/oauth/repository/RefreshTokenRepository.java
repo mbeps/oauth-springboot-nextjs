@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * Mongo repository for managing {@link RefreshToken} documents.
+ * MongoDB repository for managing {@link RefreshToken} documents.
  * Provides token centric queries so services can locate records quickly.
  *
  * @author Maruf Bepary

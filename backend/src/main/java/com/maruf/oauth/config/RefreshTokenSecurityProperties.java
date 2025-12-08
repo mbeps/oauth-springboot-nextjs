@@ -15,6 +15,17 @@ import org.springframework.stereotype.Component;
 @Data
 public class RefreshTokenSecurityProperties {
 
+    /**
+     * Enables hashing of refresh tokens at rest; defaults to {@code true}.
+     *
+     * @author Maruf Bepary
+     */
     private boolean hashingEnabled = true;
+
+    /**
+     * Enables rotation so refresh tokens are single-use; defaults to {@code true}.
+     *
+     * @author Maruf Bepary
+     */
     private boolean rotationEnabled = true;
 }

@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 /**
- * Mongo repository for {@link InvalidatedToken} documents.
+ * MongoDB repository for {@link InvalidatedToken} documents.
  * Exposes lookup helpers that let filters verify token revocation status.
  *
  * @author Maruf Bepary

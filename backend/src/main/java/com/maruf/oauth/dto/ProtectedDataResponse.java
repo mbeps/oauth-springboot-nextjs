@@ -16,8 +16,25 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProtectedDataResponse {
+    /**
+     * Message describing the protected response.
+     *
+     * @author Maruf Bepary
+     */
     private String message;
+
+    /**
+     * Username tied to the protected payload.
+     *
+     * @author Maruf Bepary
+     */
     private String user;
+
+    /**
+     * Payload content delivered only to authenticated users.
+     *
+     * @author Maruf Bepary
+     */
     private DataContent data;
 
     /**

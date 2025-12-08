@@ -23,18 +23,49 @@ import java.time.Instant;
 @AllArgsConstructor
 public class InvalidatedToken {
     
+    /**
+     * Internal identifier for the invalidated token record.
+     *
+     * @author Maruf Bepary
+     */
     @Id
     private String id;
     
+    /**
+     * Access token string that should be rejected on future requests.
+     *
+     * @author Maruf Bepary
+     */
     @Indexed(unique = true)
     private String token;
     
+    /**
+     * Username associated with the invalidated token.
+     *
+     * @author Maruf Bepary
+     */
     private String username;
     
+    /**
+     * Expiration timestamp used by MongoDB TTL to purge the record when the token would naturally expire.
+     *
+     * @author Maruf Bepary
+     */
+    // TODO: Deprecated needs to be replaced
     @Indexed(expireAfterSeconds = 0)
     private Instant expiresAt;
     
+    /**
+     * Time when the token was explicitly invalidated.
+     *
+     * @author Maruf Bepary
+     */
     private Instant invalidatedAt;
     
+    /**
+     * Reason for invalidation, e.g., logout or manual revoke.
+     *
+     * @author Maruf Bepary
+     */
     private String reason;
 }

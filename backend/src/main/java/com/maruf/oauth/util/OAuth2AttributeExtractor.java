@@ -13,8 +13,12 @@ import java.util.Collection;
  */
 public final class OAuth2AttributeExtractor {
 
-    private OAuth2AttributeExtractor() {
-    }
+    /**
+     * Utility class; prevent instantiation.
+     *
+     * @author Maruf Bepary
+     */
+    private OAuth2AttributeExtractor() {}
 
     /**
      * Resolves a stable user identifier across OAuth providers.
@@ -22,18 +26,22 @@ public final class OAuth2AttributeExtractor {
      *
      * @param principal authenticated OAuth2 user supplying attribute data
      * @return canonical user identifier or {@code null} if unavailable
+     * @author Maruf Bepary
      */
     public static String getUserId(OAuth2User principal) {
+        // GitHub uses "id"
         Object id = principal.getAttribute("id");
         if (id != null) {
             return id.toString();
         }
 
+        // Microsoft Entra uses "oid"
         Object oid = principal.getAttribute("oid");
         if (oid != null) {
             return oid.toString();
         }
 
+        // Fallback to "sub"
         Object sub = principal.getAttribute("sub");
         if (sub != null) {
             return sub.toString();
@@ -48,23 +56,28 @@ public final class OAuth2AttributeExtractor {
      *
      * @param principal authenticated OAuth2 user supplying attribute data
      * @return canonical username or {@code null} if unavailable
+     * @author Maruf Bepary
      */
     public static String getLogin(OAuth2User principal) {
+        // GitHub uses "login"
         Object login = principal.getAttribute("login");
         if (login != null) {
             return login.toString();
         }
 
+        // Microsoft Entra uses "preferred_username"
         Object preferredUsername = principal.getAttribute("preferred_username");
         if (preferredUsername != null) {
             return preferredUsername.toString();
         }
 
+        // Microsoft Entra also uses "upn"
         Object upn = principal.getAttribute("upn");
         if (upn != null) {
             return upn.toString();
         }
 
+        // Fallback to "email"
         Object email = principal.getAttribute("email");
         if (email != null) {
             return email.toString();
@@ -79,13 +92,16 @@ public final class OAuth2AttributeExtractor {
      *
      * @param principal authenticated OAuth2 user supplying attribute data
      * @return display name or {@code null} if unavailable
+     * @author Maruf Bepary
      */
     public static String getName(OAuth2User principal) {
+        // Common "name" claim
         Object name = principal.getAttribute("name");
         if (name != null) {
             return name.toString();
         }
 
+        // Microsoft Entra uses "displayName"
         Object displayName = principal.getAttribute("displayName");
         if (displayName != null) {
             return displayName.toString();
@@ -100,18 +116,22 @@ public final class OAuth2AttributeExtractor {
      *
      * @param principal authenticated OAuth2 user supplying attribute data
      * @return email address or {@code null} if unavailable
+     * @author Maruf Bepary
      */
     public static String getEmail(OAuth2User principal) {
+        // GitHub and Microsoft Entra use "email"
         Object email = principal.getAttribute("email");
         if (email != null) {
             return email.toString();
         }
 
+        // Check "preferred_username" if it looks like an email
         Object preferredUsername = principal.getAttribute("preferred_username");
         if (preferredUsername != null && preferredUsername.toString().contains("@")) {
             return preferredUsername.toString();
         }
 
+        // Check "emails" collection
         Object emails = principal.getAttribute("emails");
         if (emails instanceof Collection<?>) {
             return ((Collection<?>) emails).stream()
@@ -129,13 +149,16 @@ public final class OAuth2AttributeExtractor {
      *
      * @param principal authenticated OAuth2 user supplying attribute data
      * @return avatar URL or {@code null} if unavailable
+     * @author Maruf Bepary
      */
     public static String getAvatarUrl(OAuth2User principal) {
+        // GitHub uses "avatar_url"
         Object avatarUrl = principal.getAttribute("avatar_url");
         if (avatarUrl != null) {
             return avatarUrl.toString();
         }
 
+        // Common "picture" claim
         Object picture = principal.getAttribute("picture");
         if (picture != null) {
             return picture.toString();
@@ -150,6 +173,7 @@ public final class OAuth2AttributeExtractor {
      *
      * @param principal authenticated OAuth2 user supplying attribute data
      * @return stable username or {@code null} when all sources are empty
+     * @author Maruf Bepary
      */
     public static String resolveUsername(OAuth2User principal) {
         String username = getLogin(principal);

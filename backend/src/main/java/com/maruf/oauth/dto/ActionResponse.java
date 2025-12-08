@@ -16,9 +16,38 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ActionResponse {
+    /**
+     * Human-friendly message about the action outcome.
+     *
+     * @author Maruf Bepary
+     */
     private String message;
+
+    /**
+     * Username associated with the action.
+     *
+     * @author Maruf Bepary
+     */
     private String user;
+
+    /**
+     * Name of the protected action executed.
+     *
+     * @author Maruf Bepary
+     */
     private String action;
+
+    /**
+     * Result description returned by the server.
+     *
+     * @author Maruf Bepary
+     */
     private String result;
+
+    /**
+     * Epoch timestamp marking when the action completed.
+     *
+     * @author Maruf Bepary
+     */
     private Long timestamp;
 }
