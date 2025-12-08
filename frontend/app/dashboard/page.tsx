@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchProtectedData, performAction, logout, type ProtectedData } from '@/lib/auth';
+import { fetchProtectedData } from '@/lib/auth/protected/fetch-protected-data';
+import { performAction } from '@/lib/auth/protected/perform-action';
+import { logout } from '@/lib/auth/logout';
+import type { ProtectedData } from '@/types/protected-data';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
