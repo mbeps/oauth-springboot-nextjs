@@ -63,16 +63,28 @@ public class JwtService {
      * @author Maruf Bepary
      */
     public String generateRefreshToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
+        return generateRefreshToken(username, new HashMap<>());
+    }
+
+    /**
+     * Generates a refresh token and allows caller-provided claims (e.g., profile details)
+     * so refresh flows can rebuild user attributes without extra database calls.
+     *
+     * @param username unique user identifier used as the JWT subject
+     * @param additionalClaims optional profile claims to embed in the refresh token
+     * @return signed refresh token string
+     */
+    public String generateRefreshToken(String username, Map<String, Object> additionalClaims) {
+        Map<String, Object> claims = new HashMap<>(additionalClaims);
         claims.put("type", "refresh");
 
         return Jwts.builder()
-                .claims(claims)
-                .subject(username)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
-                .signWith(getSigningKey())
-                .compact();
+            .claims(claims)
+            .subject(username)
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
+            .signWith(getSigningKey())
+            .compact();
     }
 
     /**

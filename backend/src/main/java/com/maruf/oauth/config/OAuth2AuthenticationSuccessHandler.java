@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Handles the OAuth2 login success flow by issuing access and refresh tokens as cookies.
@@ -80,7 +82,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String accessToken = jwtService.generateAccessToken(oauth2User);
         
         // Generate refresh token (long-lived)
-        String refreshToken = jwtService.generateRefreshToken(username);
+        Map<String, Object> refreshClaims = new HashMap<>();
+        refreshClaims.put("id", OAuth2AttributeExtractor.getUserId(oauth2User));
+        refreshClaims.put("login", username);
+        refreshClaims.put("name", OAuth2AttributeExtractor.getName(oauth2User));
+        refreshClaims.put("email", OAuth2AttributeExtractor.getEmail(oauth2User));
+        refreshClaims.put("avatar_url", OAuth2AttributeExtractor.getAvatarUrl(oauth2User));
+        String refreshToken = jwtService.generateRefreshToken(username, refreshClaims);
         
         // Store refresh token
         Instant refreshExpiresAt = Instant.now().plusMillis(refreshTokenExpiration);

@@ -66,16 +66,6 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      // Check if we have a refresh token cookie before attempting refresh
-      const hasRefreshToken = typeof document !== 'undefined' && 
-        document.cookie.split(';').some(cookie => cookie.trim().startsWith('refresh_token='));
-      
-      if (!hasRefreshToken) {
-        // No refresh token available, just reject the error immediately
-        console.log('No refresh token available - authentication required');
-        return Promise.reject(error);
-      }
-
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {

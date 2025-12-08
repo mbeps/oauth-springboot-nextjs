@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.jsonwebtoken.Claims;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -158,9 +159,25 @@ public class AuthController {
                                 .build());
             }
 
+            Claims claims = jwtService.extractAllClaims(refreshToken);
+            String tokenType = (String) claims.get("type");
+            if (!"refresh".equals(tokenType)) {
+                log.warn("Token presented is not a refresh token");
+                refreshTokenStore.invalidateRefreshToken(refreshToken);
+                return ResponseEntity.status(401)
+                        .body(ErrorResponse.builder()
+                                .error("token_invalid")
+                                .message("Invalid token type")
+                                .build());
+            }
+
             // Create a minimal OAuth2User for token generation
             Map<String, Object> attributes = new HashMap<>();
-            attributes.put("login", username);
+            attributes.put("id", claims.get("id"));
+            attributes.put("login", claims.getOrDefault("login", username));
+            attributes.put("name", claims.get("name"));
+            attributes.put("email", claims.get("email"));
+            attributes.put("avatar_url", claims.get("avatar_url"));
             
             OAuth2User oauth2User = new DefaultOAuth2User(
                     Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
@@ -173,7 +190,7 @@ public class AuthController {
             
             // Rotate refresh token if enabled
             if (refreshTokenSecurityProperties.isRotationEnabled()) {
-                rotateRefreshToken(response, refreshToken, username);
+                rotateRefreshToken(response, refreshToken, username, attributes);
             }
 
             // Set new access token as cookie
@@ -276,7 +293,7 @@ public class AuthController {
         );
 
         String accessToken = jwtService.generateAccessToken(oauth2User);
-        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), attributes);
 
         Instant refreshExpiresAt = Instant.now().plusMillis(refreshTokenExpiration);
         refreshTokenStore.storeRefreshToken(refreshToken, user.getEmail(), refreshExpiresAt);
@@ -302,10 +319,10 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
-    private void rotateRefreshToken(HttpServletResponse response, String currentRefreshToken, String username) {
+    private void rotateRefreshToken(HttpServletResponse response, String currentRefreshToken, String username, Map<String, Object> refreshClaims) {
         refreshTokenStore.invalidateRefreshToken(currentRefreshToken);
 
-        String newRefreshToken = jwtService.generateRefreshToken(username);
+        String newRefreshToken = jwtService.generateRefreshToken(username, refreshClaims);
         Instant refreshExpiresAt = Instant.now().plusMillis(refreshTokenExpiration);
         refreshTokenStore.storeRefreshToken(newRefreshToken, username, refreshExpiresAt);
         addCookie(response, "refresh_token", newRefreshToken, Duration.ofMillis(refreshTokenExpiration));
