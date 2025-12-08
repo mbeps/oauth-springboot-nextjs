@@ -1,22 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  fetchPublicData, 
-  performAction, 
-  fetchProviders, 
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  fetchPublicData,
+  performAction,
+  fetchProviders,
   loginWithProvider,
   loginWithEmail,
   signupWithEmail,
-  type PublicData, 
-  type OAuthProvider 
-} from '@/lib/auth';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+  type PublicData,
+  type OAuthProvider,
+} from "@/lib/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { FaGithub, FaMicrosoft } from "react-icons/fa";
 
 /**
  * Home page component - login and public information page.
@@ -30,11 +37,11 @@ export default function Home() {
   const [publicData, setPublicData] = useState<PublicData | null>(null);
   const [providers, setProviders] = useState<OAuthProvider[]>([]);
   const [actionLoading, setActionLoading] = useState(false);
-  
+
   // Local auth state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
 
   const router = useRouter();
@@ -42,7 +49,7 @@ export default function Home() {
   useEffect(() => {
     // Redirect if already authenticated
     if (!loading && authenticated) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [authenticated, loading, router]);
 
@@ -51,12 +58,12 @@ export default function Home() {
       try {
         const [pubData, providerList] = await Promise.all([
           fetchPublicData(),
-          fetchProviders()
+          fetchProviders(),
         ]);
         setPublicData(pubData);
         setProviders(providerList);
       } catch (error) {
-        console.error('Failed to load data:', error);
+        console.error("Failed to load data:", error);
       }
     };
 
@@ -64,22 +71,11 @@ export default function Home() {
   }, []);
 
   const getProviderIcon = (key: string) => {
-    if (key === 'github') {
-      return (
-        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clipRule="evenodd" />
-        </svg>
-      );
+    if (key === "github") {
+      return <FaGithub className="w-5 h-5 mr-2" />;
     }
-    if (key === 'azure') {
-      return (
-        <svg className="w-5 h-5 mr-2" viewBox="0 0 23 23" fill="currentColor">
-          <path fill="#f25022" d="M1 1h10v10H1z"/>
-          <path fill="#00a4ef" d="M1 12h10v10H1z"/>
-          <path fill="#7fba00" d="M12 1h10v10H12z"/>
-          <path fill="#ffb900" d="M12 12h10v10H12z"/>
-        </svg>
-      );
+    if (key === "azure") {
+      return <FaMicrosoft className="w-5 h-5 mr-2" />;
     }
     return null;
   };
@@ -94,8 +90,8 @@ export default function Home() {
         await signupWithEmail(email, password, name);
       }
     } catch (error) {
-      toast.error(isLogin ? 'Login failed' : 'Signup failed', {
-        description: 'Please check your credentials and try again'
+      toast.error(isLogin ? "Login failed" : "Signup failed", {
+        description: "Please check your credentials and try again",
       });
     } finally {
       setAuthLoading(false);
@@ -116,8 +112,8 @@ export default function Home() {
       await performAction(action);
       toast.success(`Action '${action}' completed successfully`);
     } catch (error) {
-      toast.error('Authentication required', {
-        description: 'You must be logged in to perform this action'
+      toast.error("Authentication required", {
+        description: "You must be logged in to perform this action",
       });
     } finally {
       setActionLoading(false);
@@ -146,8 +142,8 @@ export default function Home() {
     );
   }
 
-  const oauthProviders = providers.filter(p => p.key !== 'local');
-  const hasLocalAuth = providers.some(p => p.key === 'local');
+  const oauthProviders = providers.filter((p) => p.key !== "local");
+  const hasLocalAuth = providers.some((p) => p.key === "local");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -169,26 +165,24 @@ export default function Home() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {oauthProviders.length > 0 ? (
-              oauthProviders.map((provider) => (
-                <Button 
-                  key={provider.key}
-                  onClick={() => loginWithProvider(provider.key)} 
-                  className="w-full"
-                  size="lg"
-                  variant="outline"
-                >
-                  {getProviderIcon(provider.key)}
-                  Sign in with {provider.name}
-                </Button>
-              ))
-            ) : (
-              !hasLocalAuth && (
-                <div className="text-center text-gray-500 py-4">
-                  Loading login options...
-                </div>
-              )
-            )}
+            {oauthProviders.length > 0
+              ? oauthProviders.map((provider) => (
+                  <Button
+                    key={provider.key}
+                    onClick={() => loginWithProvider(provider.key)}
+                    className="w-full"
+                    size="lg"
+                    variant="outline"
+                  >
+                    {getProviderIcon(provider.key)}
+                    Sign in with {provider.name}
+                  </Button>
+                ))
+              : !hasLocalAuth && (
+                  <div className="text-center text-gray-500 py-4">
+                    Loading login options...
+                  </div>
+                )}
 
             {hasLocalAuth && (
               <>
@@ -198,7 +192,9 @@ export default function Home() {
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-gray-500">Or continue with</span>
+                      <span className="bg-white px-2 text-gray-500">
+                        Or continue with
+                      </span>
                     </div>
                   </div>
                 )}
@@ -208,11 +204,16 @@ export default function Home() {
                     <TabsTrigger value="login">Login</TabsTrigger>
                     <TabsTrigger value="signup">Sign Up</TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="login">
-                    <form onSubmit={(e) => handleEmailAuth(e, true)} className="space-y-3">
+                    <form
+                      onSubmit={(e) => handleEmailAuth(e, true)}
+                      className="space-y-3"
+                    >
                       <div className="space-y-1">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Email</label>
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Email
+                        </label>
                         <input
                           type="email"
                           value={email}
@@ -223,7 +224,9 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Password</label>
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Password
+                        </label>
                         <input
                           type="password"
                           value={password}
@@ -232,16 +235,25 @@ export default function Home() {
                           required
                         />
                       </div>
-                      <Button type="submit" className="w-full" disabled={authLoading}>
-                        {authLoading ? 'Processing...' : 'Login'}
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={authLoading}
+                      >
+                        {authLoading ? "Processing..." : "Login"}
                       </Button>
                     </form>
                   </TabsContent>
-                  
+
                   <TabsContent value="signup">
-                    <form onSubmit={(e) => handleEmailAuth(e, false)} className="space-y-3">
+                    <form
+                      onSubmit={(e) => handleEmailAuth(e, false)}
+                      className="space-y-3"
+                    >
                       <div className="space-y-1">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Name</label>
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Name
+                        </label>
                         <input
                           type="text"
                           value={name}
@@ -252,7 +264,9 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Email</label>
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Email
+                        </label>
                         <input
                           type="email"
                           value={email}
@@ -263,7 +277,9 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Password</label>
+                        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                          Password
+                        </label>
                         <input
                           type="password"
                           value={password}
@@ -272,8 +288,12 @@ export default function Home() {
                           required
                         />
                       </div>
-                      <Button type="submit" className="w-full" disabled={authLoading}>
-                        {authLoading ? 'Processing...' : 'Create Account'}
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={authLoading}
+                      >
+                        {authLoading ? "Processing..." : "Create Account"}
                       </Button>
                     </form>
                   </TabsContent>
@@ -287,7 +307,8 @@ export default function Home() {
                   ✅ Backend connection successful
                 </p>
                 <p className="text-xs text-green-600 mt-1">
-                  Status: {publicData.status} | {new Date(publicData.timestamp).toLocaleTimeString()}
+                  Status: {publicData.status} |{" "}
+                  {new Date(publicData.timestamp).toLocaleTimeString()}
                 </p>
               </div>
             )}
@@ -304,16 +325,16 @@ export default function Home() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              <Button 
+              <Button
                 variant="outline"
-                onClick={() => handleTestAction('test_action')}
+                onClick={() => handleTestAction("test_action")}
                 disabled={actionLoading}
               >
                 Test Action
               </Button>
-              <Button 
+              <Button
                 variant="outline"
-                onClick={() => handleTestAction('sample_operation')}
+                onClick={() => handleTestAction("sample_operation")}
                 disabled={actionLoading}
               >
                 Sample Operation
