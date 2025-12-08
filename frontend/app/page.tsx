@@ -87,7 +87,7 @@ export default function Home() {
       } else {
         await signupWithEmail(email, password, name);
       }
-    } catch (error) {
+    } catch {
       toast.error(isLogin ? "Login failed" : "Signup failed", {
         description: "Please check your credentials and try again",
       });
@@ -109,7 +109,7 @@ export default function Home() {
     try {
       await performAction(action);
       toast.success(`Action '${action}' completed successfully`);
-    } catch (error) {
+    } catch {
       toast.error("Authentication required", {
         description: "You must be logged in to perform this action",
       });

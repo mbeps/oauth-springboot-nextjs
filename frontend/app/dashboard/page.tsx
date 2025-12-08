@@ -30,7 +30,7 @@ export default function Dashboard() {
         try {
           const data = await fetchProtectedData();
           setProtectedData(data);
-        } catch (error) {
+        } catch {
           setError('Failed to load protected data');
           toast.error('Failed to load protected data');
         }
@@ -52,13 +52,13 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const result = await performAction(action);
+      await performAction(action);
       toast.success(`Action '${action}' completed successfully`);
 
       // Refresh protected data
       const data = await fetchProtectedData();
       setProtectedData(data);
-    } catch (error) {
+    } catch {
       const errorMessage = `Failed to perform action: ${action}`;
       setError(errorMessage);
       toast.error(errorMessage);
@@ -76,7 +76,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (err) {
+    } catch {
       toast.error('Logout failed');
     }
   };

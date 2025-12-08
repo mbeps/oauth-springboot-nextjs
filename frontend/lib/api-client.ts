@@ -88,7 +88,7 @@ apiClient.interceptors.response.use(
         
         // Retry the original request
         return apiClient(originalRequest);
-      } catch (refreshError) {
+      } catch {
         // Refresh failed
         isRefreshing = false;
         processQueue(new Error('Token refresh failed'));
