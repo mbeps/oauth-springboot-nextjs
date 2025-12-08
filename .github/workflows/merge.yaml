@@ -27,11 +27,14 @@ jobs:
           java-version: ${{ matrix.java-version }}
           distribution: 'temurin'
           cache: 'gradle'
+          cache-dependency-path: 'backend/build.gradle'
       
       - name: Grant execute permission for gradlew
+        working-directory: ./backend
         run: chmod +x gradlew
       
       - name: Build (excluding tests)
+        working-directory: ./backend
         run: ./gradlew build -x test
       
       - name: Upload build reports
@@ -39,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-build-reports-${{ matrix.java-version }}
-          path: build/reports/
+          path: backend/build/reports/
 
   # Java Test Job
   java-test:
@@ -60,11 +63,14 @@ jobs:
           java-version: ${{ matrix.java-version }}
           distribution: 'temurin'
           cache: 'gradle'
+          cache-dependency-path: 'backend/build.gradle'
       
       - name: Grant execute permission for gradlew
+        working-directory: ./backend
         run: chmod +x gradlew
       
       - name: Run tests
+        working-directory: ./backend
         run: ./gradlew test
       
       - name: Upload test results
@@ -72,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-test-results-${{ matrix.java-version }}
-          path: build/reports/tests/test/
+          path: backend/build/reports/tests/test/
 
   # Java Javadoc Job
   java-javadoc:
@@ -93,11 +99,14 @@ jobs:
           java-version: ${{ matrix.java-version }}
           distribution: 'temurin'
           cache: 'gradle'
+          cache-dependency-path: 'backend/build.gradle'
       
       - name: Grant execute permission for gradlew
+        working-directory: ./backend
         run: chmod +x gradlew
       
       - name: Generate Javadoc
+        working-directory: ./backend
         run: ./gradlew javadoc
       
       - name: Upload Javadoc
@@ -105,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-javadoc-${{ matrix.java-version }}
-          path: build/docs/javadoc/
+          path: backend/build/docs/javadoc/
 
   # Node.js Linting Job
   node-lint:
@@ -120,13 +129,14 @@ jobs:
 
       - name: Detect package manager
         id: detect-package-manager
+        working-directory: ./frontend
         run: |
-          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
+          if [ -f "yarn.lock" ]; then
             echo "manager=yarn" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
             echo "runner=yarn" >> $GITHUB_OUTPUT
             exit 0
-          elif [ -f "${{ github.workspace }}/package.json" ]; then
+          elif [ -f "package.json" ]; then
             echo "manager=npm" >> $GITHUB_OUTPUT
             echo "command=ci" >> $GITHUB_OUTPUT
             echo "runner=npx --no-install" >> $GITHUB_OUTPUT
@@ -141,11 +151,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: ${{ steps.detect-package-manager.outputs.manager }}
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install dependencies
+        working-directory: ./frontend
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
 
       - name: Run Linter
+        working-directory: ./frontend
         run: ${{ steps.detect-package-manager.outputs.runner }} eslint '**/*.{js,ts,tsx}'
 
   # Node.js Build Job
@@ -162,13 +175,14 @@ jobs:
 
       - name: Detect package manager
         id: detect-package-manager
+        working-directory: ./frontend
         run: |
-          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
+          if [ -f "yarn.lock" ]; then
             echo "manager=yarn" >> $GITHUB_OUTPUT
             echo "command=install" >> $GITHUB_OUTPUT
             echo "runner=yarn" >> $GITHUB_OUTPUT
             exit 0
-          elif [ -f "${{ github.workspace }}/package.json" ]; then
+          elif [ -f "package.json" ]; then
             echo "manager=npm" >> $GITHUB_OUTPUT
             echo "command=ci" >> $GITHUB_OUTPUT
             echo "runner=npx --no-install" >> $GITHUB_OUTPUT
@@ -183,9 +197,12 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: ${{ steps.detect-package-manager.outputs.manager }}
+          cache-dependency-path: 'frontend/package-lock.json'
 
       - name: Install dependencies
+        working-directory: ./frontend
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
 
       - name: Build
+        working-directory: ./frontend
         run: ${{ steps.detect-package-manager.outputs.runner }} next build --turbopack
