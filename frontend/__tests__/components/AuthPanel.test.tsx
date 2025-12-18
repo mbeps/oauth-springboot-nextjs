@@ -33,36 +33,40 @@ vi.mock('sonner', () => ({
   },
 }));
 
+type MockOAuthProvider = { key: string; name: string };
+type MockOAuthProps = { providers: MockOAuthProvider[]; hasLocalAuth: boolean };
+
 vi.mock('@/components/auth/OAuthProviderButtons', () => ({
-  OAuthProviderButtons: (props: any) => {
+  OAuthProviderButtons: (props: MockOAuthProps) => {
     oauthPropsSpy(props);
     return (
       <div data-testid="oauth-providers">
-        {props.providers.map((provider: any) => provider.key).join(',')}
+        {props.providers.map((provider) => provider.key).join(',')}
       </div>
     );
   },
 }));
 
+type LocalAuthTabsProps = {
+  onAuth: (payload: typeof mockLoginPayload | typeof mockSignupPayload) => void;
+  loading: boolean;
+};
+
 vi.mock('@/components/auth/LocalAuthTabs', () => ({
-  LocalAuthTabs: ({ onAuth, loading }: any) => (
+  LocalAuthTabs: ({ onAuth, loading }: LocalAuthTabsProps) => (
     <div>
       <button
         data-testid="login-trigger"
         aria-label={loading ? 'auth-loading' : 'auth-ready'}
         disabled={loading}
-        onClick={() =>
-          onAuth(mockLoginPayload)
-        }
+        onClick={() => onAuth(mockLoginPayload)}
       >
         Login Trigger
       </button>
       <button
         data-testid="signup-trigger"
         disabled={loading}
-        onClick={() =>
-          onAuth(mockSignupPayload)
-        }
+        onClick={() => onAuth(mockSignupPayload)}
       >
         Signup Trigger
       </button>

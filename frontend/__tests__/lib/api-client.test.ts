@@ -87,7 +87,9 @@ describe('apiClient interceptors', () => {
   });
 
   it('propagates request interceptor errors', async () => {
-    const handler = (apiClient.interceptors.request as any).handlers[0];
+    const handler = (apiClient.interceptors.request as unknown as {
+      handlers: { fulfilled: (value: unknown) => unknown; rejected: (value: unknown) => Promise<unknown> }[];
+    }).handlers[0];
     await expect(handler.rejected(new Error('request failed'))).rejects.toThrow(
       'request failed',
     );
@@ -112,8 +114,9 @@ describe('apiClient interceptors', () => {
 
   it('rejects errors without response payloads without logging', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const handler = (apiClient.interceptors.response as any).handlers[0]
-      .rejected;
+    const handler = (apiClient.interceptors.response as unknown as {
+      handlers: { rejected: (value: unknown) => Promise<unknown> }[];
+    }).handlers[0].rejected;
 
     const error = { message: 'network down' };
     await expect(handler(error)).rejects.toBe(error);

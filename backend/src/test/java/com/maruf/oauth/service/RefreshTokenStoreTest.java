@@ -46,7 +46,7 @@ class RefreshTokenStoreTest {
 
         List<RefreshToken> tokens = refreshTokenRepository.findAll();
         assertThat(tokens).hasSize(1);
-        RefreshToken saved = tokens.getFirst();
+        RefreshToken saved = tokens.get(0);
         assertThat(saved.getToken()).isNotEqualTo(rawToken); // hashing enabled by default
         assertThat(saved.getUsername()).isEqualTo("user@example.com");
         assertThat(saved.getLastUsed()).isNotNull();
