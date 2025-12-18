@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +28,11 @@ export const LocalAuthTabs = ({ loading, onAuth }: LocalAuthTabsProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const loginEmailId = useId();
+  const loginPasswordId = useId();
+  const signupNameId = useId();
+  const signupEmailId = useId();
+  const signupPasswordId = useId();
 
   const handleSubmit = (
     e: FormEvent<HTMLFormElement>,
@@ -47,10 +52,14 @@ export const LocalAuthTabs = ({ loading, onAuth }: LocalAuthTabsProps) => {
       <TabsContent value="login">
         <form onSubmit={(e) => handleSubmit(e, "login")} className="space-y-3">
           <div className="space-y-1">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor={loginEmailId}
+            >
               Email
             </label>
             <input
+              id={loginEmailId}
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -60,10 +69,14 @@ export const LocalAuthTabs = ({ loading, onAuth }: LocalAuthTabsProps) => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor={loginPasswordId}
+            >
               Password
             </label>
             <input
+              id={loginPasswordId}
               type="password"
               value={password}
               placeholder="********"
@@ -81,10 +94,14 @@ export const LocalAuthTabs = ({ loading, onAuth }: LocalAuthTabsProps) => {
       <TabsContent value="signup">
         <form onSubmit={(e) => handleSubmit(e, "signup")} className="space-y-3">
           <div className="space-y-1">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor={signupNameId}
+            >
               Name
             </label>
             <input
+              id={signupNameId}
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -94,10 +111,14 @@ export const LocalAuthTabs = ({ loading, onAuth }: LocalAuthTabsProps) => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor={signupEmailId}
+            >
               Email
             </label>
             <input
+              id={signupEmailId}
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
@@ -107,10 +128,14 @@ export const LocalAuthTabs = ({ loading, onAuth }: LocalAuthTabsProps) => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              htmlFor={signupPasswordId}
+            >
               Password
             </label>
             <input
+              id={signupPasswordId}
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
