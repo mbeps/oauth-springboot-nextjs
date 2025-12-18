@@ -1,4 +1,5 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const getApiBaseUrl = () =>
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 /**
  * Redirects to the backend OAuth authorization endpoint.
@@ -7,5 +8,5 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
  * @author Maruf Bepary
  */
 export function loginWithProvider(providerKey: string) {
-  window.location.href = `${API_BASE_URL}/oauth2/authorization/${providerKey}`;
+  window.location.href = `${getApiBaseUrl()}/oauth2/authorization/${providerKey}`;
 }

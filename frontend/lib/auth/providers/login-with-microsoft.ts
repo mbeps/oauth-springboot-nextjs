@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+import { loginWithProvider } from './login-with-provider';
 
 /**
  * Starts the Microsoft Entra ID OAuth login via the backend route.
@@ -6,5 +6,5 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
  * @author Maruf Bepary
  */
 export function loginWithMicrosoft() {
-  window.location.href = `${API_BASE_URL}/oauth2/authorization/azure`;
+  loginWithProvider('azure');
 }
