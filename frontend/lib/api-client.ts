@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -16,7 +16,7 @@ let failedQueue: Array<{
  * @author Maruf Bepary
  */
 const processQueue = (error: Error | null = null): void => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
@@ -27,7 +27,6 @@ const processQueue = (error: Error | null = null): void => {
   failedQueue = [];
 };
 
-
 /**
  * Axios client configured for the Spring Boot backend.
  * Carries credentials and JSON defaults for every call.
@@ -37,10 +36,9 @@ export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
-
 
 /**
  * Response interceptor that retries requests after refresh.
@@ -62,9 +60,11 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized - try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't attempt refresh if this IS the refresh endpoint or auth status
-      const isRefreshEndpoint = originalRequest.url?.includes('/api/auth/refresh');
-      const isAuthStatusEndpoint = originalRequest.url?.includes('/api/auth/status');
-      
+      const isRefreshEndpoint =
+        originalRequest.url?.includes("/api/auth/refresh");
+      const isAuthStatusEndpoint =
+        originalRequest.url?.includes("/api/auth/status");
+
       if (isRefreshEndpoint || isAuthStatusEndpoint) {
         return Promise.reject(error);
       }
@@ -75,7 +75,7 @@ apiClient.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then(() => apiClient(originalRequest))
-          .catch(err => Promise.reject(err));
+          .catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
@@ -83,25 +83,25 @@ apiClient.interceptors.response.use(
 
       try {
         // Try to refresh the token
-        await apiClient.post('/api/auth/refresh');
-        
+        await apiClient.post("/api/auth/refresh");
+
         // Token refreshed successfully
         isRefreshing = false;
         processQueue();
-        
+
         // Retry the original request
         return apiClient(originalRequest);
       } catch {
         // Refresh failed
         isRefreshing = false;
-        processQueue(new Error('Token refresh failed'));
-        
+        processQueue(new Error("Token refresh failed"));
+
         // Only redirect if we're on a protected page
-        if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-          console.warn('Token refresh failed - redirecting to login');
-          window.location.href = '/';
+        if (typeof window !== "undefined" && window.location.pathname !== "/") {
+          console.warn("Token refresh failed - redirecting to login");
+          window.dispatchEvent(new Event("auth:session-expired"));
         }
-        
+
         // Return the original error so the caller can handle it
         return Promise.reject(error);
       }
@@ -109,7 +109,7 @@ apiClient.interceptors.response.use(
 
     // Log other errors
     if (error.response) {
-      console.error('API Error:', {
+      console.error("API Error:", {
         status: error.response.status,
         data: error.response.data,
         url: error.config?.url,

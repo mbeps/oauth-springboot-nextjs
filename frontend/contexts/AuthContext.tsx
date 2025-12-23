@@ -2,6 +2,7 @@
 
 import { checkAuthStatus } from "@/lib/auth/status";
 import type { User } from "@/types/user";
+import { useRouter } from "next/navigation";
 import {
   createContext,
   ReactNode,
@@ -9,6 +10,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { toast } from "sonner";
 
 /**
  * Auth context value that mirrors backend session state.
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   /**
    * Pulls the latest auth state from the backend.
@@ -64,6 +67,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshAuth();
   }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setAuthenticated(false);
+      setUser(null);
+      toast.error("Session expired. Please log in again.");
+      router.push("/");
+    };
+
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    return () => {
+      window.removeEventListener("auth:session-expired", handleSessionExpired);
+    };
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ user, authenticated, loading, refreshAuth }}>
