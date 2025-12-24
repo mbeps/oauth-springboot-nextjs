@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { PublicHealthSchema } from "@/schema/public-health-schema";
+
 /**
  * Payload returned by the public health endpoint.
  * Lets the landing page confirm the backend is reachable.
@@ -6,8 +9,4 @@
  * @property timestamp Server time when the response was created.
  * @author Maruf Bepary
  */
-export interface PublicData {
-  status: string;
-  message: string;
-  timestamp: number;
-}
+export type PublicData = z.infer<typeof PublicHealthSchema>;

@@ -1,15 +1,23 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { fetchProtectedData } from '@/lib/auth/protected/fetch-protected-data';
-import { performAction } from '@/lib/auth/protected/perform-action';
-import { logout } from '@/lib/auth/logout';
-import type { ProtectedData } from '@/types/protected-data';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { fetchProtectedData } from "@/lib/auth/protected/fetch-protected-data";
+import { performAction } from "@/lib/auth/protected/perform-action";
+import { logout } from "@/lib/auth/logout";
+import type { ProtectedData } from "@/types/protected-data";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { ActionSchema } from "@/schema/action-schema";
+import { ZodError } from "zod";
 
 /**
  * Dashboard for authenticated users.
@@ -19,7 +27,9 @@ import { toast } from 'sonner';
  */
 export default function Dashboard() {
   const { user, loading, authenticated } = useAuth();
-  const [protectedData, setProtectedData] = useState<ProtectedData | null>(null);
+  const [protectedData, setProtectedData] = useState<ProtectedData | null>(
+    null
+  );
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +40,8 @@ export default function Dashboard() {
           const data = await fetchProtectedData();
           setProtectedData(data);
         } catch {
-          setError('Failed to load protected data');
-          toast.error('Failed to load protected data');
+          setError("Failed to load protected data");
+          toast.error("Failed to load protected data");
         }
       }
     };
@@ -51,16 +61,22 @@ export default function Dashboard() {
     setError(null);
 
     try {
+      ActionSchema.parse({ action });
       await performAction(action);
       toast.success(`Action '${action}' completed successfully`);
 
       // Refresh protected data
       const data = await fetchProtectedData();
       setProtectedData(data);
-    } catch {
-      const errorMessage = `Failed to perform action: ${action}`;
-      setError(errorMessage);
-      toast.error(errorMessage);
+    } catch (err) {
+      if (err instanceof ZodError) {
+        const { errors } = err as unknown as { errors: { message: string }[] };
+        toast.error(errors[0].message);
+      } else {
+        const errorMessage = `Failed to perform action: ${action}`;
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
     } finally {
       setActionLoading(false);
     }
@@ -76,7 +92,7 @@ export default function Dashboard() {
     try {
       await logout();
     } catch {
-      toast.error('Logout failed');
+      toast.error("Logout failed");
     }
   };
 
@@ -119,7 +135,9 @@ export default function Dashboard() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user.name}
+                  </p>
                   <p className="text-xs text-gray-500">@{user.login}</p>
                 </div>
               </div>
@@ -150,20 +168,30 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Name</label>
-                    <p className="text-sm text-gray-900">{user.name || 'Not provided'}</p>
+                    <label className="text-sm font-medium text-gray-500">
+                      Name
+                    </label>
+                    <p className="text-sm text-gray-900">
+                      {user.name || "Not provided"}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Username</label>
+                    <label className="text-sm font-medium text-gray-500">
+                      Username
+                    </label>
                     <p className="text-sm text-gray-900">@{user.login}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-500">User ID</label>
+                    <label className="text-sm font-medium text-gray-500">
+                      User ID
+                    </label>
                     <p className="text-sm text-gray-900">{user.id}</p>
                   </div>
                   {user.email && (
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Email</label>
+                      <label className="text-sm font-medium text-gray-500">
+                        Email
+                      </label>
                       <p className="text-sm text-gray-900">{user.email}</p>
                     </div>
                   )}
@@ -175,36 +203,52 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Protected Data</CardTitle>
-                <CardDescription>Data from protected API endpoints</CardDescription>
+                <CardDescription>
+                  Data from protected API endpoints
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {protectedData ? (
                   <div className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Message</label>
-                      <p className="text-sm text-gray-900">{protectedData.message}</p>
+                      <label className="text-sm font-medium text-gray-500">
+                        Message
+                      </label>
+                      <p className="text-sm text-gray-900">
+                        {protectedData.message}
+                      </p>
                     </div>
                     {protectedData.data?.items && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Items</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Items
+                        </label>
                         <ul className="text-sm text-gray-900 list-disc list-inside">
-                          {protectedData.data.items.map((item: string, index: number) => (
-                            <li key={index}>{item}</li>
-                          ))}
+                          {protectedData.data.items.map(
+                            (item: string, index: number) => (
+                              <li key={index}>{item}</li>
+                            )
+                          )}
                         </ul>
                       </div>
                     )}
                     {protectedData.data?.lastUpdated && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Last Updated</label>
+                        <label className="text-sm font-medium text-gray-500">
+                          Last Updated
+                        </label>
                         <p className="text-sm text-gray-900">
-                          {new Date(protectedData.data.lastUpdated).toLocaleString()}
+                          {new Date(
+                            protectedData.data.lastUpdated
+                          ).toLocaleString()}
                         </p>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">Loading protected data...</p>
+                  <p className="text-sm text-gray-500">
+                    Loading protected data...
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -213,26 +257,28 @@ export default function Dashboard() {
             <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle>Actions</CardTitle>
-                <CardDescription>Perform actions on protected endpoints</CardDescription>
+                <CardDescription>
+                  Perform actions on protected endpoints
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-3">
-                  <Button 
-                    onClick={() => handleAction('refresh_data')}
+                  <Button
+                    onClick={() => handleAction("refresh_data")}
                     disabled={actionLoading}
                   >
-                    {actionLoading ? 'Processing...' : 'Refresh Data'}
+                    {actionLoading ? "Processing..." : "Refresh Data"}
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline"
-                    onClick={() => handleAction('test_action')}
+                    onClick={() => handleAction("test_action")}
                     disabled={actionLoading}
                   >
                     Test Action
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline"
-                    onClick={() => handleAction('sample_operation')}
+                    onClick={() => handleAction("sample_operation")}
                     disabled={actionLoading}
                   >
                     Sample Operation

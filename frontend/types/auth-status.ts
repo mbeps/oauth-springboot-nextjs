@@ -1,4 +1,5 @@
-import type { User } from './user';
+import { z } from "zod";
+import { AuthStatusSchema } from "@/schema/auth-status-schema";
 
 /**
  * Result returned by `/api/auth/status`.
@@ -7,7 +8,4 @@ import type { User } from './user';
  * @property user Optional user payload from the backend.
  * @author Maruf Bepary
  */
-export interface AuthStatus {
-  authenticated: boolean;
-  user?: User;
-}
+export type AuthStatus = z.infer<typeof AuthStatusSchema>;

@@ -4,7 +4,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { BackendStatusBanner } from "@/components/auth/BackendStatusBanner";
-import { LocalAuthTabs, type EmailAuthPayload } from "@/components/auth/LocalAuthTabs";
+import {
+  LocalAuthTabs,
+  type EmailAuthPayload,
+} from "@/components/auth/LocalAuthTabs";
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons";
 import { ProvidersDivider } from "@/components/auth/ProvidersDivider";
 import {
@@ -32,25 +35,37 @@ type AuthPanelProps = {
  * @author Maruf Bepary
  */
 export function AuthPanel({ providers, publicData }: AuthPanelProps) {
-  const oauthProviders = providers.filter((provider) => provider.key !== "local");
+  const oauthProviders = providers.filter(
+    (provider) => provider.key !== "local"
+  );
   const hasLocalAuth = providers.some((provider) => provider.key === "local");
   const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleEmailAuth = async (payload: EmailAuthPayload) => {
     setAuthLoading(true);
+    setAuthError(null);
     try {
       if (payload.mode === "login") {
         await loginWithEmail(payload.email, payload.password);
       } else {
-        await signupWithEmail(payload.email, payload.password, payload.name ?? "");
+        await signupWithEmail(
+          payload.email,
+          payload.password,
+          payload.name ?? ""
+        );
       }
-    } catch {
-      toast.error(
-        payload.mode === "login" ? "Login failed" : "Signup failed",
-        {
-          description: "Please check your credentials and try again",
-        },
-      );
+    } catch (error) {
+      const err = error as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      const message =
+        err.response?.data?.message || err.message || "Authentication failed";
+      setAuthError(message);
+      toast.error(payload.mode === "login" ? "Login failed" : "Signup failed", {
+        description: message,
+      });
     } finally {
       setAuthLoading(false);
     }
@@ -73,7 +88,11 @@ export function AuthPanel({ providers, publicData }: AuthPanelProps) {
         {hasLocalAuth && (
           <>
             {oauthProviders.length > 0 && <ProvidersDivider />}
-            <LocalAuthTabs onAuth={handleEmailAuth} loading={authLoading} />
+            <LocalAuthTabs
+              onAuth={handleEmailAuth}
+              loading={authLoading}
+              error={authError}
+            />
           </>
         )}
 
