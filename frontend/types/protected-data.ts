@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { ProtectedDataSchema } from "@/schema/protected-data-schema";
+
 /**
  * Payload returned when calling the protected API.
  * Only available when the jwt cookie is valid.
@@ -9,14 +12,4 @@
  * @property data.lastUpdated Optional timestamp of the demo data.
  * @author Maruf Bepary
  */
-export interface ProtectedData {
-  message: string;
-  user: string;
-  data?:
-    | {
-        items?: string[];
-        count?: number;
-        lastUpdated?: number;
-      }
-    | null;
-}
+export type ProtectedData = z.infer<typeof ProtectedDataSchema>;

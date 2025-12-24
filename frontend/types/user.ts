@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { UserSchema } from "@/schema/user-schema";
+
 /**
  * User profile returned after OAuth or local login.
  * Drives avatar, display name, and contact details on the UI.
@@ -8,10 +11,4 @@
  * @property avatarUrl Optional avatar rendered on the dashboard.
  * @author Maruf Bepary
  */
-export interface User {
-  id: string;
-  login: string;
-  name: string;
-  email?: string;
-  avatarUrl?: string;
-}
+export type User = z.infer<typeof UserSchema>;
