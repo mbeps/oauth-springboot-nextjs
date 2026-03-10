@@ -1,12 +1,12 @@
 package com.maruf.oauth.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
@@ -32,6 +32,7 @@ import java.util.Base64;
 public class JwksKeyLoader {
 
 	private final AuthServiceProperties authServiceProperties;
+	private final RestClient restClient = RestClient.create();
 	private RSAPublicKey publicKey;
 
 	/**
@@ -66,8 +67,7 @@ public class JwksKeyLoader {
 		log.info("Loading JWKS from: {}", jwksUrl);
 
 		try {
-			RestTemplate restTemplate = new RestTemplate();
-			String response = restTemplate.getForObject(jwksUrl, String.class);
+			String response = restClient.get().uri(jwksUrl).retrieve().body(String.class);
 
 			ObjectMapper mapper = new ObjectMapper();
 			JsonNode jwks = mapper.readTree(response);

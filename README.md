@@ -1,6 +1,6 @@
 # **Next.JS & Spring Boot OAuth System**
 
-A modern full-stack OAuth 2.0 authentication application built with Next.js 15 and Spring Boot 3, architected as a three-service system: a standalone **Auth Service** (Spring Boot, port 8081) managing all OAuth2 flows and JWT signing, a stateless **Backend API** (Spring Boot, port 8080) verifying tokens only, and a **Next.js frontend** (port 3000). This system showcases secure OAuth integration with **GitHub** and **Microsoft Entra ID**, along with optional email/password authentication, protected routes, and seamless user authentication with RS256 asymmetric JWT signing.
+A modern full-stack OAuth 2.0 authentication application built with Next.js 15 and Spring Boot 4.0.3, architected as a three-service system: a standalone **Auth Service** (Spring Boot, port 8081) managing all OAuth2 flows and JWT signing, a stateless **Backend API** (Spring Boot, port 8080) verifying tokens only, and a **Next.js frontend** (port 3000). This system showcases secure OAuth integration with **GitHub** and **Microsoft Entra ID**, along with optional email/password authentication, protected routes, and seamless user authentication with RS256 asymmetric JWT signing.
 
 The application implements a dual-token authentication system with short-lived access tokens and long-lived refresh tokens, both stored as httpOnly cookies to prevent XSS attacks. The auth service owns all identity logic—OAuth2 flows, RS256 JWT signing with an RSA private key, and MongoDB storage for token lifecycle management—whilst the backend API remains stateless, verifying JWTs only via the JWKS public key endpoint. CORS is properly configured to enable secure cross-origin communication across all services, whilst automatic token refresh mechanisms ensure uninterrupted user sessions without requiring re-authentication.
 
@@ -62,7 +62,7 @@ Health check and discovery endpoints for monitoring:
 # Requirements
 These are the requirements needed to run the project:
 - Node.js 22 LTS or higher
-- Java 17 or higher
+- Java 17 or higher (required for Spring Boot 4.0.3)
 - MongoDB 4.4 or higher (required for the auth service only; backend API is stateless with no database)
 - OAuth Application credentials for one or both providers (configured in the auth service):
   - **GitHub OAuth Application** (Client ID and Client Secret)
@@ -81,17 +81,18 @@ These are the main technologies used in this project:
 
 ## Auth Service
 - [**Java**](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html): An object-oriented programming language with strong typing and extensive libraries.
-- [**Spring Boot**](https://spring.io/projects/spring-boot): A framework for building production-ready applications with minimal configuration.
+- [**Spring Boot**](https://spring.io/projects/spring-boot): A framework for building production-ready applications with minimal configuration. This project uses Spring Boot 4.0.3 with updated starters: `spring-boot-starter-webmvc` (replacing `spring-boot-starter-web`) and `spring-boot-starter-security-oauth2-client` (replacing `spring-boot-starter-oauth2-client`).
 - [**Spring Security**](https://spring.io/projects/spring-security): Comprehensive security framework providing authentication and authorisation.
 - [**Spring Security OAuth2 Client**](https://docs.spring.io/spring-security/reference/servlet/oauth2/client/index.html): OAuth 2.0 client implementation for handling provider callbacks and authorization.
-- [**Spring Data MongoDB**](https://spring.io/projects/spring-data-mongodb): Provides integration with MongoDB for token persistence and user storage.
+- [**Spring Data MongoDB**](https://spring.io/projects/spring-data-mongodb): Provides integration with MongoDB for token persistence and user storage with Spring Boot 4.0.3 UUID representation support.
 - [**JJWT**](https://github.com/jwtk/jjwt): Java JWT library for creating and parsing JSON Web Tokens with RS256 RSA signing.
 - [**Gradle**](https://gradle.org/): Build automation tool for dependency management and project building.
 
 ## Backend API (Stateless)
 - [**Java**](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html): An object-oriented programming language with strong typing and extensive libraries.
-- [**Spring Boot**](https://spring.io/projects/spring-boot): A framework for building production-ready applications with minimal configuration.
+- [**Spring Boot**](https://spring.io/projects/spring-boot): A framework for building production-ready applications with minimal configuration. Uses `spring-boot-starter-webmvc` and `spring-boot-starter-security` (no OAuth2 client or database starters).
 - [**Spring Security**](https://spring.io/projects/spring-security): Comprehensive security framework providing authentication and authorisation (verification only, no OAuth2 client).
+- [**Spring RestClient**](https://docs.spring.io/spring-framework/reference/integration/rest-clients.html): Modern HTTP client (Spring Boot 4.0 standard) for fetching the JWKS endpoint from the auth service, replacing deprecated RestTemplate.
 - [**JJWT**](https://github.com/jwtk/jjwt): Java JWT library for parsing and validating JSON Web Tokens with JWKS public key verification.
 - [**Gradle**](https://gradle.org/): Build automation tool for dependency management and project building.
 - **Note**: No database; backend is stateless and verifies JWTs only via fetching the public key from the auth service's JWKS endpoint on startup.
@@ -212,7 +213,7 @@ Note your Client ID and Client Secret for the next step.
 Create an Entra ID app registration with the following settings:
 - **Redirect URI (SPA)**: `http://localhost:8081/login/oauth2/code/azure`
 - **Supported account types**: Single tenant or multitenant as required
-- **API permissions**: `openid`, `profile`, `email`, `offline_access`
+- **API permissions**: `openid`, `profile`, `email`, `offline_access`, `User.Read` (required for profile picture and user details)
 - **Authentication**: Enable PKCE and implicit flow for SPA
 
 Note your Application (client) ID, Client Secret (create one in Certificates & secrets), and Directory (tenant) ID.
@@ -220,7 +221,7 @@ Note your Application (client) ID, Client Secret (create one in Certificates & s
 **For Production**: Update redirect URIs to your production domain (e.g., `https://yourdomain.com` instead of `http://localhost:8081`).
 
 ## 4. Configure Auth Service
-Navigate to the `authentication` directory and create or update the `application.yaml` file with your OAuth credentials and configuration:
+Navigate to the `authentication` directory and create or update the `application.yaml` file with your OAuth credentials and configuration. This example uses environment variable interpolation for sensitive values:
 
 ```yaml
 spring:
@@ -231,57 +232,61 @@ spring:
       client:
         registration:
           github:
-            client-id: GITHUB_CLIENT_ID_HERE
-            client-secret: GITHUB_CLIENT_SECRET_HERE
+            client-id: ${GITHUB_CLIENT_ID:}
+            client-secret: ${GITHUB_CLIENT_SECRET:}
             scope:
               - user:email
               - read:user
           azure:
-            client-id: AZURE_CLIENT_ID_HERE
-            client-secret: AZURE_CLIENT_SECRET_HERE
+            client-id: ${AZURE_CLIENT_ID:}
+            client-secret: ${AZURE_CLIENT_SECRET:}
             scope:
               - openid
               - profile
               - email
               - offline_access
+              - User.Read
         provider:
           azure:
-            issuer-uri: https://login.microsoftonline.com/TENANT_ID_HERE/v2.0
+            issuer-uri: https://login.microsoftonline.com/${AZURE_TENANT_ID:}/v2.0
   data:
     mongodb:
-      uri: mongodb://localhost:27018/auth_db
+      uri: ${MONGO_URI:mongodb://localhost:27018/auth_db}
+  mongodb:
+    representation:
+      uuid: JAVA_LEGACY  # Maintains compatibility with existing MongoDB data (Spring Boot 4.0 change)
 
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 # JWT Configuration - RS256 RSA Asymmetric Signing
 jwt:
-  private-key-path: keys/auth-private.pem  # PKCS8 PEM RSA private key for signing
-  public-key-path: keys/auth-public.pem    # X509 PEM RSA public key (served via JWKS endpoint)
-  access-token-expiration: 900000    # 15 minutes in milliseconds
-  refresh-token-expiration: 604800000  # 7 days in milliseconds
+  private-key-path: ${JWT_PRIVATE_KEY_PATH:keys/auth-private.pem}  # PKCS8 PEM RSA private key for signing
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:keys/auth-public.pem}    # X509 PEM RSA public key (served via JWKS endpoint)
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION:900000}    # 15 minutes in milliseconds
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}  # 7 days in milliseconds
 
 # Auth service allowed origins and redirect URIs
 auth:
   allowed-origins:
-    - http://localhost:3000
-    - http://localhost:8080
+    - ${AUTH_ALLOWED_ORIGIN_1:http://localhost:3000}
+    - ${AUTH_ALLOWED_ORIGIN_2:http://localhost:8080}
   allowed-redirect-urls:
-    - http://localhost:3000
+    - ${AUTH_ALLOWED_REDIRECT_1:http://localhost:3000}
 
 # Cookie security settings
 cookie:
-  secure: false  # Set to true in production (requires HTTPS)
-  same-site: Lax  # Options: Strict, Lax, None
+  secure: ${COOKIE_SECURE:false}  # Set to true in production (requires HTTPS)
+  same-site: ${COOKIE_SAME_SITE:Lax}  # Options: Strict, Lax, None
 
 # Token security and rotation
 app:
   security:
     local-auth:
-      enabled: true  # Set to false to disable email/password login/signup
+      enabled: ${LOCAL_AUTH_ENABLED:true}  # Set to false to disable email/password login/signup
     refresh-token:
-      hashing-enabled: true  # SHA-256 hash tokens before storing in MongoDB
-      rotation-enabled: true  # Issue new refresh token on each use and revoke old one
+      hashing-enabled: ${REFRESH_TOKEN_HASHING:true}  # SHA-256 hash tokens before storing in MongoDB
+      rotation-enabled: ${REFRESH_TOKEN_ROTATION:true}  # Issue new refresh token on each use and revoke old one
 ```
 
 ### Auth Service Configuration Parameters
@@ -300,7 +305,7 @@ app:
 - `issuer-uri`: Microsoft identity platform issuer URI containing your Tenant ID for token validation
 
 `spring.data.mongodb`:
-- `uri`: MongoDB connection string pointing to auth service database (default: `mongodb://localhost:27018/auth_db`)
+- `uri`: MongoDB connection string pointing to auth service database (default: `mongodb://localhost:27018/auth_db`). **Note**: Auth service uses port 27018 in development; standard MongoDB port 27017 may be used in production if running on a separate MongoDB instance.
 
 `jwt`:
 - `private-key-path`: Path to RSA private key in PKCS8 PEM format (auth service uses this to sign all JWTs)
@@ -325,8 +330,67 @@ app:
 - `hashing-enabled`: SHA-256 hash refresh tokens before storing in MongoDB (recommended for production)
 - `rotation-enabled`: Issue a new refresh token and revoke the old one on each refresh use (recommended for enhanced security)
 
+### Environment Variables & Configuration Pattern
+
+the auth service supports Spring Boot's property placeholder syntax to inject environment variables. In `.env.local` or system environment variables, set these values:
+
+```env
+# OAuth Credentials
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+AZURE_CLIENT_ID=your_azure_client_id
+AZURE_CLIENT_SECRET=your_azure_client_secret
+AZURE_TENANT_ID=your_azure_tenant_id
+
+# Database
+MONGO_URI=mongodb://localhost:27018/auth_db
+
+# Server
+SERVER_PORT=8081
+
+# JWT Keys
+JWT_PRIVATE_KEY_PATH=keys/auth-private.pem
+JWT_PUBLIC_KEY_PATH=keys/auth-public.pem
+JWT_ACCESS_TOKEN_EXPIRATION=900000
+JWT_REFRESH_TOKEN_EXPIRATION=604800000
+
+# CORS and Redirects
+AUTH_ALLOWED_ORIGIN_1=http://localhost:3000
+AUTH_ALLOWED_ORIGIN_2=http://localhost:8080
+AUTH_ALLOWED_REDIRECT_1=http://localhost:3000
+
+# Cookie Security
+COOKIE_SECURE=false
+COOKIE_SAME_SITE=Lax
+
+# Features
+LOCAL_AUTH_ENABLED=true
+REFRESH_TOKEN_HASHING=true
+REFRESH_TOKEN_ROTATION=true
+```
+
+The `application.yaml` uses `${ENV_VAR:default}` syntax to support both environment variables (for CI/CD and docker containers) and hardcoded defaults (for local development without a `.env.local` file).
+
+### MongoDB UUID Representation (Spring Boot 4.0)
+
+Spring Boot 4.0 changed the default MongoDB UUID representation from `JAVA_LEGACY` to `STANDARD`. To maintain compatibility with existing MongoDB data and avoid migration issues, the auth service configuration includes:
+
+```yaml
+spring:
+  mongodb:
+    representation:
+      uuid: JAVA_LEGACY
+```
+
+This setting ensures that:
+- Existing UUID fields in your MongoDB database remain readable and compatible
+- No data migration is required when upgrading to Spring Boot 4.0
+- New inserts also use the `JAVA_LEGACY` format for consistency
+
+If you're starting a fresh database, you can optionally change this to `STANDARD` for Spring Boot 4.0 standards compliance, but `JAVA_LEGACY` is recommended for existing deployments.
+
 ## 5. Configure Backend API
-Navigate to the `backend` directory and create or update the `application.yaml` file:
+Navigate to the `backend` directory and create or update the `application.yaml` file. The backend is **stateless** and requires no database or OAuth2 client configuration:
 
 ```yaml
 spring:
@@ -334,45 +398,51 @@ spring:
     name: oauth
 
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
-# Auth service JWKS endpoint for token verification
+# Auth service JWKS endpoint for JWT verification (fetched at startup)
 auth:
   service:
-    jwks-url: http://localhost:8081  # Base URL of auth service; backend will fetch /.well-known/jwks.json at startup
+    jwks-url: ${AUTH_SERVICE_JWKS_URL:http://localhost:8081}
 
 # Frontend URL for CORS configuration
 frontend:
-  url: http://localhost:3000
+  url: ${FRONTEND_URL:http://localhost:3000}
 ```
 
-### Backend API Configuration Parameters
+### Backend Environment Variables
 
-`server.port`:
-- The port on which the stateless backend API listens (default: 8080)
+The backend API accepts the following environment variables (all optional with sensible defaults):
 
-`auth.service.jwks-url`:
-- Base URL of the auth service; backend fetches the JWKS endpoint (`/.well-known/jwks.json`) at startup using Spring's `@PostConstruct` to obtain the RSA public key for JWT verification
-- **Important**: The auth service must be running before the backend starts; failure to fetch the JWKS causes the backend to fail fast on startup
+```env
+# Server
+SERVER_PORT=8080
 
-`frontend.url`:
-- CORS allowed origin for requests from the frontend (e.g., `http://localhost:3000`)
+# Auth Service
+AUTH_SERVICE_JWKS_URL=http://localhost:8081
 
-**Backend API Notes**:
+# Frontend CORS
+FRONTEND_URL=http://localhost:3000
+```
+
+The backend is a stateless REST API with no database. It verifies all incoming JWTs by fetching the public key from the auth service's JWKS endpoint at startup. If the auth service is unreachable at startup, the backend will fail with an `IllegalStateException`.
+
+**Backend Stateless Architecture**:
 - The backend has **no database** and is completely **stateless**
 - Token verification relies entirely on RS256 public key fetched from auth service's JWKS endpoint
 - Protected endpoints check the `type="access"` claim to reject malformed or refresh tokens
-- Refresh token blacklist checks are NOT performed by the backend (no MongoDB access); only the auth service maintains the invocation list
+- Refresh token blacklist checks are NOT performed by the backend (no MongoDB access); only the auth service maintains the blacklist
 
 **For Production** (Both Services):
 - Generate RSA key pair (auth service): `openssl genpkey -algorithm RSA -out keys/auth-private.pem && openssl rsa -in keys/auth-private.pem -pubout -out keys/auth-public.pem`
-- Set `cookie.secure` to `true`
-- Set `auth.allowed-origins` and `auth.allowed-redirect-urls` to your production domain
-- Configure MongoDB with authentication and SSL/TLS
-- Configure `auth.service.jwks-url` to point to the production auth service
+- Set `COOKIE_SECURE=true` and `COOKIE_SAME_SITE=Strict` for HTTPS-only cookies
+- Set `AUTH_ALLOWED_ORIGIN_1`, `AUTH_ALLOWED_ORIGIN_2`, and `AUTH_ALLOWED_REDIRECT_1` to your production domain(s)
+- Configure MongoDB with authentication and SSL/TLS in `MONGO_URI`
+- Configure `AUTH_SERVICE_JWKS_URL` to point to the production auth service
+- Ensure Java 17+ and Spring Boot 4.0.3 compatible dependencies
 
 ## 6. Configure Frontend
-Navigate to the `frontend` directory, create a `.env.local` file with the following environment variables:
+Navigate to the `frontend` directory and create a `.env.local` file with the following environment variables. This file is Git-ignored and contains deployment-specific settings:
 
 ```env
 NEXT_PUBLIC_AUTH_URL='http://localhost:8081'
@@ -381,14 +451,16 @@ NODE_ENV='development'
 ```
 
 Configuration parameters:
-- `NEXT_PUBLIC_AUTH_URL`: Base URL of the auth service (default: `http://localhost:8081`). Used by `authClient` for authentication calls and OAuth2 redirect construction
-- `NEXT_PUBLIC_API_URL`: Base URL of the backend API (default: `http://localhost:8080`). Used by `apiClient` for application data requests
-- `NODE_ENV`: Environment setting (`development` or `production`)
+- `NEXT_PUBLIC_AUTH_URL`: Base URL of the auth service (default: `http://localhost:8081`). Used by `authClient` for authentication calls and OAuth2 redirect construction. Must be accessible from the browser.
+- `NEXT_PUBLIC_API_URL`: Base URL of the backend API (default: `http://localhost:8080`). Used by `apiClient` for application data requests. Must be accessible from the browser.
+- `NODE_ENV`: Environment setting (`development` or `production`) — controls Tailwind CSS tree-shaking and React warnings
 
 **Frontend Notes**:
 - The frontend uses **two separate Axios clients**:
   - `authClient`: Points to the auth service (8081) for authentication, token refresh, provider discovery, and OAuth2 flows
   - `apiClient`: Points to the backend API (8080) for application data; includes a 401 interceptor that delegates token refresh to `authClient`
+- The `.env.local` file is Git-ignored for security and should never be committed to version control
+- All `NEXT_PUBLIC_*` variables are exposed to the browser; do not include secrets here
 
 ## 7. Install Frontend Dependencies
 ```sh
@@ -427,7 +499,7 @@ cd backend
 ./gradlew bootRun
 ```
 
-The backend will fetch the JWKS endpoint from the auth service at startup (`http://localhost:8081/.well-known/jwks.json`). If the auth service is not running, the backend will fail to start. Once running, the backend should be available on `http://localhost:8080`.
+The backend will fetch the JWKS endpoint from the auth service at startup (`http://localhost:8081/.well-known/jwks.json`). **The auth service must be running before the backend starts**; if unreachable, the backend will fail fast with an `IllegalStateException`. Once running, the backend should be available on `http://localhost:8080`.
 
 ### Start Frontend (Third)
 In another new terminal:
@@ -470,8 +542,9 @@ AZURE_TENANT_ID=your_azure_tenant_id
 
 # Auth Service
 AUTH_PORT=8081
-AUTH_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
-AUTH_ALLOWED_REDIRECT_URLS=http://localhost:3000
+AUTH_ALLOWED_ORIGIN_1=http://localhost:3000
+AUTH_ALLOWED_ORIGIN_2=http://localhost:8080
+AUTH_ALLOWED_REDIRECT_1=http://localhost:3000
 
 # Backend API
 BACKEND_PORT=8080
@@ -774,12 +847,47 @@ GET http://localhost:8080/api/public/health
 ## Token Management
 The application automatically handles token refresh. When your access token expires, the frontend's `apiClient` interceptor calls the auth service to obtain a new access token without requiring re-authentication.
 
+# Spring Boot 4.0 Migration Notes
+
+This project has been upgraded to **Spring Boot 4.0.3**. If you're upgrading from Spring Boot 3.x, be aware of the following breaking changes:
+
+## Updated Dependencies
+
+The following Spring Boot starters have been renamed or replaced:
+
+| Spring Boot 3.x                     | Spring Boot 4.0.3                            |
+| ----------------------------------- | -------------------------------------------- |
+| `spring-boot-starter-web`           | `spring-boot-starter-webmvc`                 |
+| `spring-boot-starter-oauth2-client` | `spring-boot-starter-security-oauth2-client` |
+
+These changes are reflected in the `build.gradle` files for both the auth service and backend API.
+
+## Testing Annotations
+
+In test files, update test annotations:
+- `@MockBean` → `@MockitoBean` (when using Mockito)
+- Ensure `spring-boot-starter-test` is included in `testImplementation`
+
+## MongoDB UUID Representation
+
+Spring Boot 4.0 changed the default UUID representation in MongoDB from `JAVA_LEGACY` to `STANDARD`. The auth service configuration includes `spring.mongodb.representation.uuid: JAVA_LEGACY` to maintain compatibility with existing data. See the "MongoDB UUID Representation (Spring Boot 4.0)" section in the configuration documentation above.
+
+## Java Version Requirement
+
+Spring Boot 4.0.3 requires **Java 17 or higher**. Ensure your `JAVA_HOME` environment variable points to Java 17+:
+
+```sh
+java -version
+# openjdk version "17.x.x" or higher
+```
+
 # References
 - [Next.js Documentation](https://nextjs.org/docs)
 - [React.js Documentation](https://react.dev/reference/react)
 - [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 - [Shadcn UI Documentation](https://ui.shadcn.com/)
-- [Spring Boot Documentation](https://docs.spring.io/spring-boot/documentation.html)
+- [Spring Boot 4.0 Documentation](https://docs.spring.io/spring-boot/documentation.html)
+- [Spring Boot 4.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide)
 - [Spring Security OAuth2 Documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/index.html)
 - [GitHub OAuth Documentation](https://docs.github.com/en/apps/oauth-apps)
 - [Microsoft Entra ID OAuth Documentation](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)

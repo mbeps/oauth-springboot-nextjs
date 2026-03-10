@@ -1,6 +1,6 @@
 package com.maruf.oauth.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.maruf.oauth.config.JwksKeyLoader;
 import com.maruf.oauth.config.SecurityConfig;
 import com.maruf.oauth.dto.ActionRequest;
@@ -9,8 +9,8 @@ import com.maruf.oauth.dto.UserResponse;
 import com.maruf.oauth.support.TestOAuth2Users;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class ApiControllerTest {
 
-        @MockBean
+        @MockitoBean
         private JwksKeyLoader jwksKeyLoader;
 
         @Autowired
