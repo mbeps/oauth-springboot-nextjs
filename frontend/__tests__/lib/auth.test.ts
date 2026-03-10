@@ -197,4 +197,19 @@ describe("auth helpers", () => {
     );
     location.restore();
   });
+
+  it("handles scenario where window is missing (SSR)", () => {
+    // Skip this test if window is globally defined and can't be deleted easily
+    if (typeof window === "undefined") return;
+
+    const originalWindow = global.window;
+    try {
+      // @ts-expect-error - deliberate mock
+      delete global.window;
+      // Should not throw
+      loginWithProvider("github");
+    } finally {
+      global.window = originalWindow;
+    }
+  });
 });

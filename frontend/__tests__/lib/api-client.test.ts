@@ -164,4 +164,53 @@ describe("apiClient interceptors", () => {
       value: originalLocation,
     });
   });
+
+  it("logs API error when error.response exists but is not a 401 requiring refresh", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    mock.onGet("/api/not-found").reply(404, { message: "Not Found" });
+
+    await expect(apiClient.get("/api/not-found")).rejects.toThrow();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "API Error:",
+      expect.objectContaining({
+        status: 404,
+        data: { message: "Not Found" },
+        url: "/api/not-found",
+      }),
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it("rejects and clears failedQueue when refresh fails", async () => {
+    mock.onGet("/request-a").replyOnce(401);
+    mock.onGet("/request-b").replyOnce(401);
+    authMock.onPost("/api/auth/refresh").replyOnce(500);
+
+    // Initial request triggers refresh
+    const firstRequest = apiClient.get("/request-a");
+    // Concurrent request gets queued
+    const queuedRequest = apiClient.get("/request-b");
+
+    const [resA, resB] = await Promise.allSettled([
+      firstRequest,
+      queuedRequest,
+    ]);
+
+    expect(resA.status).toBe("rejected");
+    expect(resB.status).toBe("rejected");
+    if (resB.status === "rejected") {
+      expect(resB.reason.message).toBe("Token refresh failed");
+    }
+
+    // Verify queue is cleared by making another 401 request
+    authMock.onPost("/api/auth/refresh").replyOnce(200);
+    mock.onGet("/request-c").replyOnce(401);
+    mock.onGet("/request-c").replyOnce(200, { success: true });
+
+    const resC = await apiClient.get("/request-c");
+    expect(resC.data).toEqual({ success: true });
+  });
 });

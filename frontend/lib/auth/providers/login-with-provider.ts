@@ -16,5 +16,7 @@ export function loginWithProvider(providerKey: string) {
     typeof window !== "undefined"
       ? window.location.origin
       : "http://localhost:3000";
-  window.location.href = `${authUrl}/oauth2/authorization/${providerKey}?redirect_uri=${encodeURIComponent(frontendUrl)}`;
+  if (typeof window !== "undefined") {
+    window.location.href = `${authUrl}/oauth2/authorization/${providerKey}?redirect_uri=${encodeURIComponent(frontendUrl)}`;
+  }
 }

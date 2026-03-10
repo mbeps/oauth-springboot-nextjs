@@ -1,33 +1,33 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const loginWithEmailMock = vi.fn();
 const signupWithEmailMock = vi.fn();
 const toastErrorMock = vi.fn();
 const oauthPropsSpy = vi.fn();
 let mockLoginPayload = {
-  email: 'login@example.com',
-  password: 'pw',
-  name: 'Login User',
-  mode: 'login',
+  email: "login@example.com",
+  password: "pw",
+  name: "Login User",
+  mode: "login",
 };
 let mockSignupPayload = {
-  email: 'signup@example.com',
-  password: 'pw',
-  name: 'Signup User',
-  mode: 'signup' as const,
+  email: "signup@example.com",
+  password: "pw",
+  name: "Signup User",
+  mode: "signup" as const,
 };
 
-vi.mock('@/lib/auth/local-auth/login', () => ({
+vi.mock("@/lib/auth/local-auth/login", () => ({
   loginWithEmail: (...args: unknown[]) => loginWithEmailMock(...args),
 }));
 
-vi.mock('@/lib/auth/local-auth/signup', () => ({
+vi.mock("@/lib/auth/local-auth/signup", () => ({
   signupWithEmail: (...args: unknown[]) => signupWithEmailMock(...args),
 }));
 
-vi.mock('sonner', () => ({
+vi.mock("sonner", () => ({
   toast: {
     error: (...args: unknown[]) => toastErrorMock(...args),
   },
@@ -36,12 +36,12 @@ vi.mock('sonner', () => ({
 type MockOAuthProvider = { key: string; name: string };
 type MockOAuthProps = { providers: MockOAuthProvider[]; hasLocalAuth: boolean };
 
-vi.mock('@/components/auth/OAuthProviderButtons', () => ({
+vi.mock("@/components/auth/OAuthProviderButtons", () => ({
   OAuthProviderButtons: (props: MockOAuthProps) => {
     oauthPropsSpy(props);
     return (
       <div data-testid="oauth-providers">
-        {props.providers.map((provider) => provider.key).join(',')}
+        {props.providers.map((provider) => provider.key).join(",")}
       </div>
     );
   },
@@ -52,12 +52,12 @@ type LocalAuthTabsProps = {
   loading: boolean;
 };
 
-vi.mock('@/components/auth/LocalAuthTabs', () => ({
+vi.mock("@/components/auth/LocalAuthTabs", () => ({
   LocalAuthTabs: ({ onAuth, loading }: LocalAuthTabsProps) => (
     <div>
       <button
         data-testid="login-trigger"
-        aria-label={loading ? 'auth-loading' : 'auth-ready'}
+        aria-label={loading ? "auth-loading" : "auth-ready"}
         disabled={loading}
         onClick={() => onAuth(mockLoginPayload)}
       >
@@ -74,35 +74,35 @@ vi.mock('@/components/auth/LocalAuthTabs', () => ({
   ),
 }));
 
-import { AuthPanel } from '@/components/auth/AuthPanel';
+import { AuthPanel } from "@/components/auth/AuthPanel";
 
-describe('AuthPanel', () => {
+describe("AuthPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLoginPayload = {
-      email: 'login@example.com',
-      password: 'pw',
-      name: 'Login User',
-      mode: 'login',
+      email: "login@example.com",
+      password: "pw",
+      name: "Login User",
+      mode: "login",
     };
     mockSignupPayload = {
-      email: 'signup@example.com',
-      password: 'pw',
-      name: 'Signup User',
-      mode: 'signup',
+      email: "signup@example.com",
+      password: "pw",
+      name: "Signup User",
+      mode: "signup",
     };
   });
 
-  it('filters OAuth providers and renders backend status', () => {
+  it("filters OAuth providers and renders backend status", () => {
     render(
       <AuthPanel
         providers={[
-          { key: 'github', name: 'GitHub' },
-          { key: 'local', name: 'Email' },
-          { key: 'azure', name: 'Microsoft' },
+          { key: "github", name: "GitHub" },
+          { key: "local", name: "Email" },
+          { key: "azure", name: "Microsoft" },
         ]}
         publicData={{
-          status: 'ok',
+          status: "ok",
           timestamp: new Date().toISOString(),
         }}
       />,
@@ -111,120 +111,132 @@ describe('AuthPanel', () => {
     expect(oauthPropsSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         providers: [
-          { key: 'github', name: 'GitHub' },
-          { key: 'azure', name: 'Microsoft' },
+          { key: "github", name: "GitHub" },
+          { key: "azure", name: "Microsoft" },
         ],
         hasLocalAuth: true,
       }),
     );
 
-    expect(screen.getByTestId('oauth-providers').textContent).toContain(
-      'github,azure',
+    expect(screen.getByTestId("oauth-providers").textContent).toContain(
+      "github,azure",
     );
     expect(
       screen.getByText(/Backend connection successful/i),
     ).toBeInTheDocument();
   });
 
-  it('handles local login and signup flows with loading states', async () => {
+  it("handles local login and signup flows with loading states", async () => {
     loginWithEmailMock.mockResolvedValueOnce(undefined);
-    signupWithEmailMock.mockRejectedValueOnce(new Error('fail'));
+    signupWithEmailMock.mockRejectedValueOnce(new Error("fail"));
 
     render(
       <AuthPanel
         providers={[
-          { key: 'local', name: 'Email' },
-          { key: 'github', name: 'GitHub' },
+          { key: "local", name: "Email" },
+          { key: "github", name: "GitHub" },
         ]}
         publicData={null}
       />,
     );
 
-    const loginTrigger = screen.getByTestId('login-trigger');
+    const loginTrigger = screen.getByTestId("login-trigger");
     await userEvent.click(loginTrigger);
 
-    expect(loginWithEmailMock).toHaveBeenCalledWith(
-      'login@example.com',
-      'pw',
-    );
+    expect(loginWithEmailMock).toHaveBeenCalledWith("login@example.com", "pw");
 
     await waitFor(() =>
-      expect(loginTrigger).toHaveAttribute('aria-label', 'auth-ready'),
+      expect(loginTrigger).toHaveAttribute("aria-label", "auth-ready"),
     );
 
-    const signupTrigger = screen.getByTestId('signup-trigger');
+    const signupTrigger = screen.getByTestId("signup-trigger");
     await userEvent.click(signupTrigger);
 
     expect(signupWithEmailMock).toHaveBeenCalledWith(
-      'signup@example.com',
-      'pw',
-      'Signup User',
+      "signup@example.com",
+      "pw",
+      "Signup User",
     );
 
     await waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
-        'Signup failed',
+        "Signup failed",
         expect.any(Object),
       ),
     );
   });
 
-  it('shows login failure toast when local login fails', async () => {
-    loginWithEmailMock.mockRejectedValueOnce(new Error('invalid'));
+  it("shows login failure toast when local login fails", async () => {
+    loginWithEmailMock.mockRejectedValueOnce(new Error("invalid"));
 
     render(
       <AuthPanel
-        providers={[{ key: 'local', name: 'Email' }]}
+        providers={[{ key: "local", name: "Email" }]}
         publicData={null}
       />,
     );
 
-    await userEvent.click(screen.getByTestId('login-trigger'));
+    await userEvent.click(screen.getByTestId("login-trigger"));
 
     await waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
-        'Login failed',
+        "Login failed",
         expect.any(Object),
       ),
     );
   });
 
-  it('renders OAuth-only mode without local auth', () => {
+  it("renders OAuth-only mode without local auth", () => {
     render(
       <AuthPanel
-        providers={[{ key: 'github', name: 'GitHub' }]}
+        providers={[{ key: "github", name: "GitHub" }]}
         publicData={null}
       />,
     );
 
     expect(oauthPropsSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        providers: [{ key: 'github', name: 'GitHub' }],
+        providers: [{ key: "github", name: "GitHub" }],
         hasLocalAuth: false,
       }),
     );
-    expect(screen.queryByTestId('login-trigger')).not.toBeInTheDocument();
+    expect(screen.queryByTestId("login-trigger")).not.toBeInTheDocument();
   });
 
-  it('falls back to empty name when signup payload omits it', async () => {
+  it("falls back to empty name when signup payload omits it", async () => {
     mockSignupPayload = {
-      email: 'no-name@example.com',
-      password: 'pw',
+      email: "no-name@example.com",
+      password: "pw",
       name: undefined,
-      mode: 'signup',
+      mode: "signup",
     };
     render(
       <AuthPanel
-        providers={[{ key: 'local', name: 'Local' }]}
+        providers={[{ key: "local", name: "Local" }]}
         publicData={null}
       />,
     );
 
-    await userEvent.click(screen.getByTestId('signup-trigger'));
+    await userEvent.click(screen.getByTestId("signup-trigger"));
     expect(signupWithEmailMock).toHaveBeenCalledWith(
-      'no-name@example.com',
-      'pw',
-      '',
+      "no-name@example.com",
+      "pw",
+      "",
     );
+  });
+
+  it("renders correctly with an empty provider list", () => {
+    const { getByTestId } = render(
+      <AuthPanel providers={[]} publicData={null} />,
+    );
+
+    expect(oauthPropsSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providers: [],
+        hasLocalAuth: false,
+      }),
+    );
+    expect(screen.queryByTestId("login-trigger")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("signup-trigger")).not.toBeInTheDocument();
   });
 });
