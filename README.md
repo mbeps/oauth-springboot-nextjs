@@ -438,6 +438,205 @@ npm run dev
 
 The frontend should now be running on `http://localhost:3000`
 
+# Docker Deployment
+
+This project includes complete Docker and Podman support for running all services in isolated containers. Docker streamlines local development, testing, and deployment by eliminating manual service setup and managing dependencies automatically.
+
+## Prerequisites
+
+Ensure you have one of the following installed:
+- **Docker**: [Install Docker Desktop](https://www.docker.com/products/docker-desktop) (includes Docker Compose)
+- **Podman**: [Install Podman](https://podman.io/docs/installation) with Podman Compose (`podman-compose`)
+
+Verify installation:
+```sh
+docker --version  # or: podman --version
+docker-compose --version  # or: podman-compose --version
+```
+
+## Environment Variables
+
+Create a `.env` file in the project root with OAuth credentials and service configuration:
+
+```env
+# GitHub OAuth
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# Microsoft Entra ID OAuth
+AZURE_CLIENT_ID=your_azure_client_id
+AZURE_CLIENT_SECRET=your_azure_client_secret
+AZURE_TENANT_ID=your_azure_tenant_id
+
+# Auth Service
+AUTH_PORT=8081
+AUTH_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+AUTH_ALLOWED_REDIRECT_URLS=http://localhost:3000
+
+# Backend API
+BACKEND_PORT=8080
+FRONTEND_URL=http://localhost:3000
+
+# Frontend
+FRONTEND_PORT=3001
+NEXT_PUBLIC_AUTH_URL=http://localhost:8081
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# MongoDB
+MONGO_PORT=27018
+MONGO_DB=auth_db
+```
+
+## Starting All Services
+
+To start MongoDB, auth service, backend API, and frontend with a single command:
+
+```sh
+docker-compose up --build
+```
+
+Services will be available at:
+- **MongoDB**: `localhost:27018`
+- **Auth Service**: `http://localhost:8081`
+- **Backend API**: `http://localhost:8080`
+- **Frontend**: `http://localhost:3001`
+
+View logs from all services:
+```sh
+docker-compose logs -f
+```
+
+View logs from a specific service:
+```sh
+docker-compose logs -f auth  # or: backend, frontend, mongo
+```
+
+## Development Workflow (Database + Backend Only)
+
+For frontend development without running the Next.js container, start only MongoDB and the backend API:
+
+```sh
+docker-compose up --build mongo auth backend
+```
+
+Then start the frontend locally in another terminal:
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+This approach:
+- Uses containerised MongoDB and backend services
+- Enables faster frontend development with HMR (hot module reloading)
+- Simplifies troubleshooting of frontend code changes
+- Still provides the full backend stack for testing
+
+## Service Port Reference
+
+| Service      | Port  | Container  | Access                      |
+| ------------ | ----- | ---------- | --------------------------- |
+| MongoDB      | 27018 | `mongo`    | `mongodb://localhost:27018` |
+| Auth Service | 8081  | `auth`     | `http://localhost:8081`     |
+| Backend API  | 8080  | `backend`  | `http://localhost:8080`     |
+| Frontend     | 3001  | `frontend` | `http://localhost:3001`     |
+
+**Note**: Frontend runs on port 3001 inside containers (vs. 3000 when running locally with `npm run dev`).
+
+## Volume Management and Data Persistence
+
+MongoDB data is persisted in a named Docker volume (`mongodb_data`) by default. This ensures data survives container restarts.
+
+View volumes:
+```sh
+docker volume ls | grep oauth
+```
+
+Remove MongoDB data (WARNING: this deletes all stored data):
+```sh
+docker volume rm oauth-springboot-nextjs_mongodb_data
+```
+
+## Rebuilding Specific Services
+
+Rebuild a single service after code changes:
+
+```sh
+# Rebuild auth service
+docker-compose build auth
+
+# Rebuild backend API
+docker-compose build backend
+
+# Rebuild frontend
+docker-compose build frontend
+
+# Rebuild all services
+docker-compose build
+```
+
+Then start services:
+```sh
+docker-compose up
+```
+
+## Viewing Logs
+
+Real-time logs for all services:
+```sh
+docker-compose logs -f
+```
+
+Logs for a specific service with timestamp:
+```sh
+docker-compose logs --timestamps auth
+```
+
+Last 50 lines from a service:
+```sh
+docker-compose logs --tail=50 backend
+```
+
+## Stopping and Cleaning Up
+
+Stop all running services (containers remain):
+```sh
+docker-compose stop
+```
+
+Stop and remove all containers:
+```sh
+docker-compose down
+```
+
+Stop, remove containers, and delete volumes (WARNING: MongoDB data will be lost):
+```sh
+docker-compose down -v
+```
+
+## Podman Compatibility
+
+This project supports rootless Podman with automatic user namespace mapping. To use Podman instead of Docker:
+
+```sh
+# Use podman-compose instead of docker-compose
+podman-compose up --build
+
+# All other commands remain the same
+podman-compose logs -f
+podman-compose down
+```
+
+Podman automatically handles:
+- User namespace remapping (rootless containers run as your user)
+- Volume permission mapping
+- Port binding without root privileges
+
+If you encounter permission issues, use `sudo podman-compose` or configure Podman to run rootless:
+```sh
+podman system migrate
+```
+
 # Usage
 
 ## Logging In
