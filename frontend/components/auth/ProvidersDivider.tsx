@@ -1,7 +1,6 @@
-"use client";
-
 /**
- * Visual divider between OAuth and local auth.
+ * Visual divider between OAuth and local auth sections on the login
+ * panel. Renders a horizontal line with "Or continue with" centred.
  * @returns Divider UI.
  * @author Maruf Bepary
  */

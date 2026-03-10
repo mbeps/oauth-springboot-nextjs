@@ -1,17 +1,6 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-/**
- * Routes that stay accessible without a session.
- * @author Maruf Bepary
- */
-const publicRoutes = ['/', '/error'];
-
-/**
- * Routes that require a valid jwt cookie.
- * @author Maruf Bepary
- */
-const protectedRoutes = ['/dashboard'];
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { publicRoutes, protectedRoutes } from "./routes";
 
 /**
  * Guards protected routes by checking the `jwt` cookie.
@@ -27,7 +16,9 @@ export function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Check if route is protected
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
 
   // Public routes are always accessible
   if (isPublicRoute) {
@@ -36,12 +27,12 @@ export function middleware(request: NextRequest) {
 
   // For protected routes, check if JWT cookie exists
   if (isProtectedRoute) {
-    const jwtCookie = request.cookies.get('jwt');
+    const jwtCookie = request.cookies.get("jwt");
 
     // If no JWT cookie, redirect to home
     if (!jwtCookie) {
       const url = request.nextUrl.clone();
-      url.pathname = '/';
+      url.pathname = "/";
       return NextResponse.redirect(url);
     }
 
@@ -61,8 +52,8 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Skip Next.js internals and static files
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // Always run for API routes
-    '/(api|trpc)(.*)',
+    "/(api|trpc)(.*)",
   ],
 };

@@ -1,24 +1,14 @@
 package com.maruf.oauth.config;
 
-import com.maruf.oauth.service.JwtService;
-import com.maruf.oauth.service.RefreshTokenStore;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -26,59 +16,44 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.time.Duration;
 import java.util.Arrays;
 
 /**
- * Configures Spring Security for OAuth2 login combined with JWT cookie
- * authentication.
- * Applies stateless session management because tokens carry user identity on
- * each request.
+ * Spring Security configuration for the backend API.
  *
- * @author Maruf Bepary
+ * <p>
+ * The filter chain defined here enforces a stateless, token-based security
+ * model. CORS is restricted to the frontend origin (configured via
+ * {@code frontend.url}), CSRF protection is disabled for simplicity, and the
+ * session management is set to {@code STATELESS} because all authentication
+ * state is conveyed by the access token cookie.
+ *
+ * <p>
+ * Public endpoints under <code>/api/public/**</code> are permitted for
+ * everyone while all other <code>/api/**</code> paths require a valid JWT.
+ * A custom {@link AuthenticationEntryPoint} returns JSON 401 responses instead
+ * of a default login page. The {@link JwtAuthenticationFilter} is registered
+ * before the standard {@link UsernamePasswordAuthenticationFilter} to
+ * populate the {@link org.springframework.security.core.Authentication}
+ * from the token.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@Slf4j
 public class SecurityConfig {
 
-    /**
-     * Frontend base URL loaded from {@code frontend.url}; defaults to
-     * {@code http://localhost:3000}.
-     *
-     * @author Maruf Bepary
-     */
     @Value("${frontend.url:http://localhost:3000}")
     private String frontendUrl;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
-    private final RefreshTokenStore refreshTokenStore;
-    private final JwtService jwtService;
-    private final HttpCookieFactory cookieFactory;
-    private final OAuth2AuthenticationFailureHandler oauth2FailureHandler;
 
     /**
-     * Provides BCrypt password encoding for local authentication.
+     * Builds the security filter chain used by Spring Security.
      *
-     * @return configured {@link PasswordEncoder} bean
-     * @author Maruf Bepary
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * Builds the primary security filter chain covering OAuth2 login, JWT filters,
-     * and logout handling.
-     * Disables server side sessions to rely solely on tokens and enforces cookie
-     * cleanup during logout.
-     *
-     * @param http the mutable {@link HttpSecurity} builder provided by Spring Boot
-     * @author Maruf Bepary
+     * @param http the {@link HttpSecurity} builder
+     * @return the configured {@link SecurityFilterChain}
+     * @throws Exception if configuration fails
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -88,71 +63,22 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/", "/login", "/error", "/webjars/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/api/auth/status").permitAll()
-                        .requestMatchers("/api/auth/providers").permitAll()
-                        .requestMatchers("/api/auth/refresh").permitAll()
-                        .requestMatchers("/api/auth/signup").permitAll()
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/logout").permitAll()
-                        .requestMatchers("/api/protected/**").authenticated()
-                        .requestMatchers("/api/user").authenticated()
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(apiAuthenticationEntryPoint()))
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(oauth2SuccessHandler)
-                        .failureHandler(oauth2FailureHandler))
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessHandler((request, response, authentication) -> {
-                            // Invalidate tokens with proper error handling
-                            if (request.getCookies() != null) {
-                                for (Cookie cookie : request.getCookies()) {
-                                    try {
-                                        if ("jwt".equals(cookie.getName())) {
-                                            // Validate token before extracting data
-                                            String token = cookie.getValue();
-                                            if (jwtService.isTokenValid(token) && !jwtService.isTokenExpired(token)) {
-                                                java.time.Instant expiresAt = jwtService.getExpirationDate(token)
-                                                        .toInstant();
-                                                String username = jwtService.extractUsername(token);
-                                                refreshTokenStore.invalidateAccessToken(token, username, expiresAt);
-                                            }
-                                        } else if ("refresh_token".equals(cookie.getName())) {
-                                            refreshTokenStore.invalidateRefreshToken(cookie.getValue());
-                                        }
-                                    } catch (Exception e) {
-                                        // Log but don't fail logout if token invalidation fails
-                                        log.warn("Failed to invalidate token during logout: {}", e.getMessage());
-                                    }
-                                }
-                            }
-
-                            // Delete JWT cookie
-                            writeCookie(response, "jwt", "", Duration.ZERO);
-
-                            // Delete refresh token cookie
-                            writeCookie(response, "refresh_token", "", Duration.ZERO);
-
-                            // Return JSON response
-                            response.setStatus(200);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"success\":true,\"message\":\"Logout successful\"}");
-                        })
-                        .deleteCookies("jwt", "refresh_token"))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
-     * Defines CORS settings that allow the Next.js frontend to call the API.
-     * Restricts origins and headers to reduce attack surface while supporting
-     * required HTTP verbs.
+     * Creates a CORS configuration source allowing the configured frontend origin
+     * with credentials and common methods/headers. Necessary for the browser to
+     * send cookies across domains.
      *
-     * @author Maruf Bepary
+     * @return the {@link CorsConfigurationSource} instance
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -168,40 +94,18 @@ public class SecurityConfig {
     }
 
     /**
-     * Creates an authentication entry point that returns 401 for API endpoints.
-     * Prevents redirects to login page for AJAX/API calls, improving REST API
-     * behavior.
+     * Produces an {@link AuthenticationEntryPoint} that writes a simple JSON
+     * payload when authentication is required but missing/invalid. This replaces
+     * the default redirect to a login page which is inappropriate for a JSON API.
      *
-     * @author Maruf Bepary
+     * @return the entry point handling unauthenticated requests
      */
     @Bean
     public AuthenticationEntryPoint apiAuthenticationEntryPoint() {
         return (request, response, authException) -> {
-            String requestUri = request.getRequestURI();
-
-            // For API endpoints, return 401 JSON response
-            if (requestUri != null && requestUri.startsWith("/api/")) {
-                response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                response.setContentType("application/json");
-                response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
-            } else {
-                // For non-API endpoints, redirect to login
-                response.sendRedirect("/login");
-            }
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
         };
-    }
-
-    /**
-     * Creates a cookie with security defaults for logout responses.
-     * Sets {@code maxAge} to zero to instruct browsers to remove the cookie
-     * immediately.
-     *
-     * @param name  cookie identifier to overwrite or delete
-     * @param value new cookie value, {@code null} clears the cookie
-     * @author Maruf Bepary
-     */
-    private void writeCookie(HttpServletResponse response, String name, String value, Duration maxAge) {
-        ResponseCookie cookie = cookieFactory.buildTokenCookie(name, value, maxAge);
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

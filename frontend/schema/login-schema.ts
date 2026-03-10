@@ -1,3 +1,7 @@
+/**
+ * Schema for the request body of the `/api/auth/login` endpoint.
+ * Used to validate credentials before sending them to the auth service.
+ */
 import { z } from "zod";
 
 export const LoginSchema = z.object({

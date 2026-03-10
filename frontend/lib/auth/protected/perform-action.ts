@@ -1,4 +1,4 @@
-import { apiClient } from '../../api-client';
+import { apiClient } from "../../api-client";
 
 /**
  * Triggers a protected backend action.
@@ -7,7 +7,6 @@ import { apiClient } from '../../api-client';
  * @returns Promise that resolves with backend response.
  * @author Maruf Bepary
  */
-export async function performAction(action: string): Promise<Record<string, unknown>> {
-  const response = await apiClient.post<Record<string, unknown>>('/api/protected/action', { action });
-  return response.data;
+export async function performAction(action: string): Promise<void> {
+  await apiClient.post("/api/protected/action", { action });
 }

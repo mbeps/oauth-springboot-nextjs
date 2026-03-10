@@ -79,3 +79,9 @@ app:
     refresh-token:
       hashing-enabled: true
       rotation-enabled: true
+    local-auth:
+      enabled: true
+
+auth:
+  service:
+    jwks-url: http://localhost:8081

@@ -1,3 +1,7 @@
+/**
+ * Schema for the request body sent to `/api/protected/action`.
+ * Validates that the `action` string is present and within length limits.
+ */
 import { z } from "zod";
 
 export const ActionSchema = z.object({

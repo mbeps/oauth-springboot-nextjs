@@ -28,7 +28,7 @@ import { ZodError } from "zod";
 export default function Dashboard() {
   const { user, loading, authenticated } = useAuth();
   const [protectedData, setProtectedData] = useState<ProtectedData | null>(
-    null
+    null,
   );
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +70,7 @@ export default function Dashboard() {
       setProtectedData(data);
     } catch (err) {
       if (err instanceof ZodError) {
-        const { errors } = err as unknown as { errors: { message: string }[] };
-        toast.error(errors[0].message);
+        toast.error(err.issues[0].message);
       } else {
         const errorMessage = `Failed to perform action: ${action}`;
         setError(errorMessage);
@@ -227,7 +226,7 @@ export default function Dashboard() {
                           {protectedData.data.items.map(
                             (item: string, index: number) => (
                               <li key={index}>{item}</li>
-                            )
+                            ),
                           )}
                         </ul>
                       </div>
@@ -239,7 +238,7 @@ export default function Dashboard() {
                         </label>
                         <p className="text-sm text-gray-900">
                           {new Date(
-                            protectedData.data.lastUpdated
+                            protectedData.data.lastUpdated,
                           ).toLocaleString()}
                         </p>
                       </div>

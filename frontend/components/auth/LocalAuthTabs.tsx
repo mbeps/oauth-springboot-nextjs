@@ -7,11 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoginSchema } from "@/schema/login-schema";
 import { SignupSchema } from "@/schema/signup-schema";
+import { cn } from "@/lib/utils";
 
+/**
+ * Payload passed to the auth handler when the user submits either the
+ * login or signup form.
+ */
 export type EmailAuthPayload = {
+  /** email address entered by the user */
   email: string;
+  /** password entered by the user */
   password: string;
+  /** optional display name (signup only) */
   name?: string;
+  /** distinguishes login versus signup mode */
   mode: "login" | "signup";
 };
 
@@ -49,7 +58,7 @@ export const LocalAuthTabs = ({
 
   const handleSubmit = (
     e: FormEvent<HTMLFormElement>,
-    mode: EmailAuthPayload["mode"]
+    mode: EmailAuthPayload["mode"],
   ) => {
     e.preventDefault();
     setValidationErrors({});
@@ -63,14 +72,10 @@ export const LocalAuthTabs = ({
       onAuth({ email, password, name, mode });
     } catch (err) {
       if (err instanceof ZodError) {
-        const { errors } = err as unknown as {
-          errors: { path: (string | number)[]; message: string }[];
-        };
-
         const newErrors: Record<string, string> = {};
-        errors.forEach((error) => {
-          if (error.path[0]) {
-            newErrors[error.path[0] as string] = error.message;
+        err.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            newErrors[issue.path[0] as string] = issue.message;
           }
         });
         setValidationErrors(newErrors);
@@ -78,8 +83,20 @@ export const LocalAuthTabs = ({
     }
   };
 
+  const inputCls = (field: string) =>
+    cn(
+      "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      validationErrors[field]
+        ? "border-red-500 focus-visible:ring-red-500"
+        : "border-input",
+    );
+
   return (
-    <Tabs defaultValue="login" className="w-full">
+    <Tabs
+      defaultValue="login"
+      className="w-full"
+      onValueChange={() => setValidationErrors({})}
+    >
       <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="login">Login</TabsTrigger>
         <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -105,11 +122,7 @@ export const LocalAuthTabs = ({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.email
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "border-input"
-              }`}
+              className={inputCls("email")}
               placeholder="name@example.com"
             />
             {validationErrors.email && (
@@ -129,11 +142,7 @@ export const LocalAuthTabs = ({
               value={password}
               placeholder="********"
               onChange={(event) => setPassword(event.target.value)}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.password
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "border-input"
-              }`}
+              className={inputCls("password")}
             />
             {validationErrors.password && (
               <p className="text-xs text-red-500">
@@ -142,7 +151,7 @@ export const LocalAuthTabs = ({
             )}
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Processing..." : "Sign Up"}
+            {loading ? "Processing..." : "Login"}
           </Button>
         </form>
       </TabsContent>
@@ -161,11 +170,7 @@ export const LocalAuthTabs = ({
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.name
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "border-input"
-              }`}
+              className={inputCls("name")}
               placeholder="John Doe"
             />
             {validationErrors.name && (
@@ -184,11 +189,7 @@ export const LocalAuthTabs = ({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.email
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "border-input"
-              }`}
+              className={inputCls("email")}
               placeholder="name@example.com"
             />
             {validationErrors.email && (
@@ -208,11 +209,7 @@ export const LocalAuthTabs = ({
               value={password}
               placeholder="********"
               onChange={(event) => setPassword(event.target.value)}
-              className={`flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                validationErrors.password
-                  ? "border-red-500 focus-visible:ring-red-500"
-                  : "border-input"
-              }`}
+              className={inputCls("password")}
             />
             {validationErrors.password && (
               <p className="text-xs text-red-500">

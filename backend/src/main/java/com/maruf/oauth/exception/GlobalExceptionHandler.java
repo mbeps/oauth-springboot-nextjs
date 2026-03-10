@@ -11,28 +11,34 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Provides consistent JSON responses for common Spring MVC errors.
- * Keeps logging and payload formatting in one place to simplify troubleshooting.
+ * Controller advice that centralizes exception handling across all controllers.
  *
- * @author Maruf Bepary
+ * <p>
+ * Transforms common Spring exceptions into consistent JSON error responses.
+ * Handlers cover validation errors, authentication/authorization failures,
+ * illegal arguments, and any uncaught exceptions. Each response includes a
+ * timestamp, HTTP status code, an error string, and a message. The helper
+ * {@link #buildErrorMap} constructs the response body.
  */
 @ControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    /**
-     * Handles bean validation errors and returns field level messages.
-     * Uses maps so frontend forms can bind errors without extra parsing.
-     *
-     * @param ex raised validation exception containing binding results
-     * @author Maruf Bepary
-     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    /**
+     * Handles {@link MethodArgumentNotValidException} thrown when request body
+     * validation fails. Builds a map of field errors and returns HTTP 400
+     * along with details.
+     *
+     * @param ex exception containing validation results
+     * @return 400 response with error map
+     */
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
@@ -51,97 +57,79 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    /**
-     * Converts Spring Security authentication failures into HTTP 401 responses.
-     * Includes the exception message to aid debugging login issues.
-     *
-     * @param ex authentication exception thrown by Spring Security
-     * @author Maruf Bepary
-     */
     @ExceptionHandler(AuthenticationException.class)
+    /**
+     * Catches any Spring Security {@link AuthenticationException}, typically
+     * thrown when credentials are missing or invalid. Returns a 401 JSON error.
+     *
+     * @param ex authentication exception
+     * @return 401 response with error details
+     */
     public ResponseEntity<Map<String, Object>> handleAuthenticationException(AuthenticationException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.UNAUTHORIZED.value());
-        response.put("error", "Authentication Failed");
-        response.put("message", ex.getMessage());
-
         log.warn("Authentication error: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(buildErrorMap(HttpStatus.UNAUTHORIZED, "Authentication Failed", ex.getMessage()));
     }
 
-    /**
-     * Responds with HTTP 403 when a user lacks required permissions.
-     * Avoids leaking backend details by returning a generic message.
-     *
-     * @param ex access denial raised by authorization checks
-     * @author Maruf Bepary
-     */
     @ExceptionHandler(AccessDeniedException.class)
+    /**
+     * Invoked when a user is authenticated but lacks required authorities (403).
+     *
+     * @param ex access denied exception
+     * @return 403 response with a generic permission error message
+     */
     public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.FORBIDDEN.value());
-        response.put("error", "Access Denied");
-        response.put("message", "You don't have permission to access this resource");
-
         log.warn("Access denied: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(buildErrorMap(HttpStatus.FORBIDDEN, "Access Denied",
+                        "You don't have permission to access this resource"));
     }
 
-    /**
-     * Maps {@link IllegalArgumentException} to a 400 Bad Request payload.
-     * Keeps the thrown message for clarity while maintaining consistent structure.
-     *
-     * @param ex invalid argument encountered by service or controller layers
-     * @author Maruf Bepary
-     */
     @ExceptionHandler(IllegalArgumentException.class)
+    /**
+     * Converts an {@link IllegalArgumentException} into a 400 Bad Request
+     * response. Useful for programmatic validation failures thrown inside
+     * controllers or services.
+     *
+     * @param ex illegal argument exception
+     * @return 400 response with error message
+     */
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-        response.put("error", "Bad Request");
-        response.put("message", ex.getMessage());
-
         log.warn("Illegal argument: {}", ex.getMessage());
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.badRequest()
+                .body(buildErrorMap(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage()));
     }
 
-    /**
-     * Catches unexpected errors and returns a generic 500 response.
-     * Logs the exception stack trace to preserve debugging context.
-     *
-     * @param ex unhandled exception bubbled up to the controller advice
-     * @author Maruf Bepary
-     */
     @ExceptionHandler(Exception.class)
+    /**
+     * Fallback handler for all other {@link Exception} types. Logs the error and
+     * returns a 500 Internal Server Error JSON payload to avoid leaking stack
+     * traces.
+     *
+     * @param ex unexpected exception
+     * @return 500 response with generic error message
+     */
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        response.put("error", "Internal Server Error");
-        response.put("message", "An unexpected error occurred");
-
         log.error("Unexpected error: ", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildErrorMap(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
+                        "An unexpected error occurred"));
     }
 
     /**
-     * Handles insufficient OAuth scope exceptions.
-     * Returns 403 when required OAuth permissions were not granted.
+     * Common helper that constructs the response body used by several handlers.
      *
-     * @param ex insufficient scope exception from OAuth validation
-     * @author Maruf Bepary
+     * @param status  HTTP status to report
+     * @param error   short error string
+     * @param message descriptive message
+     * @return map suitable for serialization as JSON
      */
-    @ExceptionHandler(InsufficientScopeException.class)
-    public ResponseEntity<ErrorResponse> handleInsufficientScopeException(InsufficientScopeException ex) {
-        ErrorResponse response = ErrorResponse.builder()
-                .error("insufficient_scope")
-                .message(ex.getMessage())
-                .build();
-
-        log.warn("Insufficient OAuth scope: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    private Map<String, Object> buildErrorMap(HttpStatus status, String error, String message) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", status.value());
+        body.put("error", error);
+        body.put("message", message);
+        return body;
     }
 }

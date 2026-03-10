@@ -1,3 +1,11 @@
+/**
+ * Card UI component exposing buttons that trigger protected API calls.
+ * Designed for the demo dashboard to verify authentication enforcement
+ * on backend endpoints.  The parent supplies an `onAction` callback and
+ * a loading flag which disables the buttons during in‑flight requests.
+ *
+ * @author Maruf Bepary
+ */
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -7,8 +15,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+/**
+ * Props accepted by `ProtectedActionsCard`.
+ */
 type ProtectedActionsCardProps = {
+  /**
+   * Handler invoked when a button is clicked, receives the action name.
+   */
   onAction: (action: string) => Promise<void>;
+  /**
+   * Whether an action request is currently in progress (disables buttons).
+   */
   loading: boolean;
 };
 

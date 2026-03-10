@@ -2,6 +2,17 @@
   "configurations": [
     {
       "type": "java",
+      "name": "Spring Boot-AuthenticationApplication<authentication>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/authentication",
+      "mainClass": "com.maruf.auth.AuthenticationApplication",
+      "projectName": "authentication",
+      "args": "",
+      "vmArgs": "-Dspring.config.additional-location=${workspaceFolder}/authentication/application.yaml",
+      "envFile": "${workspaceFolder}/.env"
+    },
+    {
+      "type": "java",
       "name": "Spring Boot-OauthApplication<oauth-backend>",
       "request": "launch",
       "cwd": "${workspaceFolder}/backend",
@@ -41,6 +52,14 @@
     {
       "name": "Run backend + frontend",
       "configurations": [
+        "Spring Boot-OauthApplication<oauth-backend>",
+        "Next.js: debug server-side"
+      ]
+    },
+    {
+      "name": "Run all services",
+      "configurations": [
+        "Spring Boot-AuthenticationApplication<authentication>",
         "Spring Boot-OauthApplication<oauth-backend>",
         "Next.js: debug server-side"
       ]

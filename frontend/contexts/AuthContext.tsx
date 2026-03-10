@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * @returns Promise that resolves after state sync.
    * @author Maruf Bepary
    */
-  const refreshAuth = async () => {
+  const refreshAuth = useCallback(async () => {
     try {
       const status = await checkAuthStatus();
       setAuthenticated(status.authenticated);
@@ -62,11 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshAuth();
-  }, []);
+  }, [refreshAuth]);
 
   useEffect(() => {
     const handleSessionExpired = () => {

@@ -1,7 +1,10 @@
+/**
+ * Schema for the `/api/auth/signup` request body. Extends login schema
+ * with a `name` field.
+ */
+import { LoginSchema } from "./login-schema";
 import { z } from "zod";
 
-export const SignupSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+export const SignupSchema = LoginSchema.extend({
   name: z.string().min(1, "Name is required"),
 });

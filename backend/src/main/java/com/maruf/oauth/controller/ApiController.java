@@ -1,7 +1,6 @@
 package com.maruf.oauth.controller;
 
 import com.maruf.oauth.dto.*;
-import com.maruf.oauth.util.OAuth2AttributeExtractor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,20 +10,28 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Exposes public and protected API endpoints consumed by the Next.js client.
- * Keeps responses small and log-friendly while delegating attribute parsing to dedicated helpers.
+ * Primary REST controller for the backend API.
  *
- * @author Maruf Bepary
+ * <p>
+ * Defines a simple public health check and several protected endpoints that
+ * require a valid JWT obtained from the auth service. The controller methods
+ * extract user information via the {@code @AuthenticationPrincipal} annotation
+ * which relies on {@link com.maruf.oauth.config.JwtAuthenticationFilter}
+ * populating the security
+ * context.
  */
 @RestController
 @Slf4j
 public class ApiController {
 
     /**
-     * Reports service health for monitoring tools and anonymous callers.
-     * Uses a builder so fields stay explicit even as telemetry needs grow.
+     * GET /api/public/health
+     * <p>
+     * Unauthenticated public health endpoint used by the frontend to verify
+     * that the backend is reachable. Returns a {@link PublicHealthResponse}
+     * containing status, message, and timestamp. No authentication required.
      *
-     * @author Maruf Bepary
+     * @return 200 OK with health payload
      */
     @GetMapping("/api/public/health")
     public ResponseEntity<PublicHealthResponse> publicHealth() {
@@ -33,92 +40,88 @@ public class ApiController {
                 .message("Public endpoint is working")
                 .timestamp(System.currentTimeMillis())
                 .build();
-        
+
         log.info("Public health endpoint accessed");
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Returns the authenticated user's profile information.
-     * Relies on {@link OAuth2AttributeExtractor} to shield the controller from provider specific types.
+     * GET /api/user
+     * <p>
+     * Returns basic profile information about the currently authenticated
+     * user. Requires a valid JWT; if the security context is not populated an
+     * authentication error will be generated before this method is invoked.
      *
-     * @param principal the authenticated OAuth2 user supplied by Spring Security
-     * @author Maruf Bepary
+     * @param principal the {@link OAuth2User} extracted from the token
+     * @return 200 OK with {@link UserResponse}
      */
     @GetMapping("/api/user")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getUser(@AuthenticationPrincipal OAuth2User principal) {
-        // check if user is authenticated
-        if (principal == null) {
-            log.warn("Unauthenticated access attempt to /api/user");
-            return ResponseEntity.status(401).build();
-        }
-        // autheticated user info
         UserResponse response = UserResponse.builder()
-                .id(OAuth2AttributeExtractor.getUserId(principal))
-                .login(OAuth2AttributeExtractor.resolveUsername(principal))
-                .name(OAuth2AttributeExtractor.getName(principal))
-                .email(OAuth2AttributeExtractor.getEmail(principal))
-                .avatarUrl(OAuth2AttributeExtractor.getAvatarUrl(principal))
+                .id(getStringAttribute(principal, "id"))
+                .login(getStringAttribute(principal, "login"))
+                .name(getStringAttribute(principal, "name"))
+                .email(getStringAttribute(principal, "email"))
+                .avatarUrl(getStringAttribute(principal, "avatar_url"))
                 .build();
-        
+
         log.info("User info requested for: {}", response.getLogin());
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Delivers sample protected data to demonstrate JWT guarded requests.
-     * Separates user identification from payload generation to simplify future storage integration.
+     * GET /api/protected/data
+     * <p>
+     * Example protected resource. Demonstrates use of
+     * {@code @PreAuthorize("isAuthenticated()")} to guard the endpoint. The
+     * response includes a static list of items and the username who requested
+     * it.
      *
-     * @param principal the authenticated OAuth2 user requesting protected content
-     * @author Maruf Bepary
+     * @param principal current authenticated principal
+     * @return 200 OK with {@link ProtectedDataResponse}
      */
     @GetMapping("/api/protected/data")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProtectedDataResponse> getProtectedData(@AuthenticationPrincipal OAuth2User principal) {
-        if (principal == null) {
-            log.warn("Unauthenticated access attempt to /api/protected/data");
-            return ResponseEntity.status(401).build();
-        }
-        String username = OAuth2AttributeExtractor.resolveUsername(principal);
+        String username = getStringAttribute(principal, "login");
 
-        // mock data
         ProtectedDataResponse.DataContent dataContent = ProtectedDataResponse.DataContent.builder()
-                .items(new String[]{"Item 1", "Item 2", "Item 3"})
+                .items(new String[] { "Item 1", "Item 2", "Item 3" })
                 .count(3)
                 .lastUpdated(System.currentTimeMillis())
                 .build();
-        
+
         ProtectedDataResponse response = ProtectedDataResponse.builder()
                 .message("This is protected data")
                 .user(username)
                 .data(dataContent)
                 .build();
-        
+
         log.info("Protected data accessed by: {}", username);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Handles state changing actions for authenticated users.
-     * Validates the incoming payload and echoes a structured response for easy client side notifications.
+     * POST /api/protected/action
+     * <p>
+     * Accepts an {@link ActionRequest} body and echoes back an
+     * {@link ActionResponse} including the authenticated user and the action
+     * provided. This endpoint is protected and validates the request body using
+     * Jakarta Bean Validation (triggered by {@code @Validated}).
      *
-     * @param principal the authenticated OAuth2 user executing the action
-     * @param request   validated request payload describing the action to perform
-     * @author Maruf Bepary
+     * @param principal authenticated user
+     * @param request   validated action request payload
+     * @return 200 OK with {@link ActionResponse}
      */
     @PostMapping("/api/protected/action")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ActionResponse> performAction(
             @AuthenticationPrincipal OAuth2User principal,
             @Validated @RequestBody ActionRequest request) {
-        
-        if (principal == null) {
-            log.warn("Unauthenticated access attempt to /api/protected/action");
-            return ResponseEntity.status(401).build();
-        }
-        String username = OAuth2AttributeExtractor.resolveUsername(principal);
-        
+
+        String username = getStringAttribute(principal, "login");
+
         ActionResponse response = ActionResponse.builder()
                 .message("Action performed successfully")
                 .user(username)
@@ -126,8 +129,21 @@ public class ApiController {
                 .result("Success")
                 .timestamp(System.currentTimeMillis())
                 .build();
-        
+
         log.info("Action '{}' performed by: {}", request.getAction(), username);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Utility that safely retrieves an attribute from the OAuth2 principal and
+     * converts it to a string, returning {@code null} if absent.
+     *
+     * @param principal OAuth2 user
+     * @param key       attribute name in the token
+     * @return string value or {@code null}
+     */
+    private String getStringAttribute(OAuth2User principal, String key) {
+        Object value = principal.getAttribute(key);
+        return value != null ? value.toString() : null;
     }
 }

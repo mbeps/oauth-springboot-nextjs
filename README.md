@@ -1,8 +1,8 @@
 # **Next.JS & Spring Boot OAuth System**
 
-A modern full-stack OAuth 2.0 authentication application built with Next.js 15 and Spring Boot 3. This system showcases secure OAuth integration with **GitHub** and **Microsoft Entra ID**, along with optional email/password authentication, protected routes, and seamless user authentication with JWT-based session management.
+A modern full-stack OAuth 2.0 authentication application built with Next.js 15 and Spring Boot 3, architected as a three-service system: a standalone **Auth Service** (Spring Boot, port 8081) managing all OAuth2 flows and JWT signing, a stateless **Backend API** (Spring Boot, port 8080) verifying tokens only, and a **Next.js frontend** (port 3000). This system showcases secure OAuth integration with **GitHub** and **Microsoft Entra ID**, along with optional email/password authentication, protected routes, and seamless user authentication with RS256 asymmetric JWT signing.
 
-The application implements a dual-token authentication system with short-lived access tokens and long-lived refresh tokens, both stored as httpOnly cookies to prevent XSS attacks. MongoDB provides persistent storage for refresh tokens and invalidated access tokens, ensuring secure session management and proper token revocation. CORS is properly configured to enable secure cross-origin communication between the frontend and backend, whilst automatic token refresh mechanisms ensure uninterrupted user sessions without requiring re-authentication.
+The application implements a dual-token authentication system with short-lived access tokens and long-lived refresh tokens, both stored as httpOnly cookies to prevent XSS attacks. The auth service owns all identity logic—OAuth2 flows, RS256 JWT signing with an RSA private key, and MongoDB storage for token lifecycle management—whilst the backend API remains stateless, verifying JWTs only via the JWKS public key endpoint. CORS is properly configured to enable secure cross-origin communication across all services, whilst automatic token refresh mechanisms ensure uninterrupted user sessions without requiring re-authentication.
 
 # Features
 
@@ -18,15 +18,17 @@ The application provides comprehensive OAuth 2.0 authentication with flexible pr
 - Client-side authentication state management
 
 ## JWT Token Management
-Secure token generation, validation, and lifecycle management:
+Secure token generation, validation, and lifecycle management with RS256 asymmetric signing:
+- **RS256 RSA asymmetric signing**: Auth service signs tokens with an RSA private key; backend verifies using the public key fetched from the JWKS endpoint
+- Only the auth service can sign valid tokens (holds the RSA private key); if the backend is compromised, no valid tokens can be created
 - Dual-token system with access tokens (15 minutes by default) and refresh tokens (7 days by default)
 - Automatic token generation upon successful authentication
 - Token validation on protected endpoints
-- Custom JWT claims with user information (ID, username, email, avatar)
+- Custom JWT claims with user information (ID, username, email, avatar) and token type identifier
 - Token expiry handling and validation
 - Automatic access token refresh using refresh tokens
 - Refresh token rotation for enhanced security
-- Persistent refresh token storage in MongoDB
+- Persistent refresh token storage in MongoDB (auth service only)
 
 ## Protected Routes and Endpoints
 Comprehensive route-level and API-level security:
@@ -61,8 +63,8 @@ Health check and discovery endpoints for monitoring:
 These are the requirements needed to run the project:
 - Node.js 22 LTS or higher
 - Java 17 or higher
-- MongoDB 4.4 or higher
-- OAuth Application credentials for one or both providers:
+- MongoDB 4.4 or higher (required for the auth service only; backend API is stateless with no database)
+- OAuth Application credentials for one or both providers (configured in the auth service):
   - **GitHub OAuth Application** (Client ID and Client Secret)
   - **Microsoft Entra ID App Registration** (Client ID, Client Secret, and Tenant ID)
 
@@ -77,14 +79,22 @@ These are the main technologies used in this project:
 - [**Shadcn UI**](https://ui.shadcn.com/): A collection of accessible and customisable React components built with Radix UI and Tailwind CSS.
 - [**Axios**](https://axios-http.com/): A promise-based HTTP client for making API requests with interceptors for token management.
 
-## Back-End
+## Auth Service
 - [**Java**](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html): An object-oriented programming language with strong typing and extensive libraries.
 - [**Spring Boot**](https://spring.io/projects/spring-boot): A framework for building production-ready applications with minimal configuration.
 - [**Spring Security**](https://spring.io/projects/spring-security): Comprehensive security framework providing authentication and authorisation.
-- [**Spring Security OAuth2 Client**](https://docs.spring.io/spring-security/reference/servlet/oauth2/client/index.html): OAuth 2.0 client implementation for Spring applications.
-- [**Spring Data MongoDB**](https://spring.io/projects/spring-data-mongodb): Provides integration with MongoDB for data persistence.
-- [**JJWT**](https://github.com/jwtk/jjwt): Java JWT library for creating and parsing JSON Web Tokens.
+- [**Spring Security OAuth2 Client**](https://docs.spring.io/spring-security/reference/servlet/oauth2/client/index.html): OAuth 2.0 client implementation for handling provider callbacks and authorization.
+- [**Spring Data MongoDB**](https://spring.io/projects/spring-data-mongodb): Provides integration with MongoDB for token persistence and user storage.
+- [**JJWT**](https://github.com/jwtk/jjwt): Java JWT library for creating and parsing JSON Web Tokens with RS256 RSA signing.
 - [**Gradle**](https://gradle.org/): Build automation tool for dependency management and project building.
+
+## Backend API (Stateless)
+- [**Java**](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html): An object-oriented programming language with strong typing and extensive libraries.
+- [**Spring Boot**](https://spring.io/projects/spring-boot): A framework for building production-ready applications with minimal configuration.
+- [**Spring Security**](https://spring.io/projects/spring-security): Comprehensive security framework providing authentication and authorisation (verification only, no OAuth2 client).
+- [**JJWT**](https://github.com/jwtk/jjwt): Java JWT library for parsing and validating JSON Web Tokens with JWKS public key verification.
+- [**Gradle**](https://gradle.org/): Build automation tool for dependency management and project building.
+- **Note**: No database; backend is stateless and verifies JWTs only via fetching the public key from the auth service's JWKS endpoint on startup.
 
 ## Database
 - [**MongoDB**](https://www.mongodb.com/): NoSQL database for storing refresh tokens and invalidated access tokens with TTL-based expiry.
@@ -95,43 +105,86 @@ These are the main technologies used in this project:
 The application uses httpOnly cookies for token storage rather than localStorage. This approach prevents XSS attacks as JavaScript cannot access httpOnly cookies. Access tokens have a 15-minute lifespan whilst refresh tokens last 7 days by default. Both tokens are transmitted securely with the Secure flag in production.
 
 ## Database Architecture
-MongoDB stores two collections:
-- `refresh_tokens`: Stores valid refresh tokens with username, creation time, last used time, and expiry date
-- `invalidated_access_tokens`: Stores invalidated access tokens until their natural expiry
+MongoDB is used exclusively by the auth service (backend API is stateless with no database). The auth service stores three collections:
 
-Both collections use MongoDB's TTL indexes to automatically delete expired documents, eliminating the need for manual cleanup.
+- `users`: Local user credentials and profile information (used when local auth is enabled)
+  - `id`: MongoDB ObjectId
+  - `email`: Unique login identifier
+  - `password`: BCrypt hash
+  - `name`: Display name
+  - `avatarUrl`: Optional profile picture URL
+  - `roles`: User roles (e.g. ROLE_USER)
+
+- `refresh_tokens`: Long-lived tokens supporting rotation and hashing
+  - `id`: MongoDB ObjectId
+  - `token`: SHA-256 hash of the token (when hashing is enabled)
+  - `username`: Associated user email/login
+  - `expiresAt`: Expiry timestamp with TTL index; document auto-deleted when reached
+  - `createdAt`: Token creation timestamp
+  - `lastUsed`: Timestamp of last refresh use
+
+- `invalidated_access_tokens`: Blacklist of revoked but not yet naturally expired access tokens
+  - `id`: MongoDB ObjectId
+  - `token`: Raw JWT string (unique indexed)
+  - `username`: User identifier for audit
+  - `expiresAt`: Token's natural expiry with TTL index; document auto-removed at expiry
+  - `invalidatedAt`: Logout/revocation timestamp
+  - `reason`: Reason for invalidation (e.g. "logout")
+
+All collections use MongoDB's TTL indexes on the `expiresAt` field to automatically delete expired documents, eliminating the need for manual cleanup. The backend API does not use MongoDB and remains completely stateless.
 
 ## JWT Token Structure
-Access tokens contain user claims (ID, login, name, email, avatar URL) and a type field set to `access`. Refresh tokens contain minimal information with type set to "refresh". All tokens are signed using HMAC-SHA256 with a secret key.
+Access tokens contain user claims (ID, login, name, email, avatar URL) and a type field set to `access`. Refresh tokens contain minimal information with type set to `refresh`. 
+
+**Signing**: Tokens are signed using **RS256 RSA asymmetric signing**:
+- Auth service signs tokens with an RSA private key loaded from `keys/auth-private.pem` (PKCS8 PEM format)
+- Backend verifies tokens using the RSA public key fetched from the auth service's `/.well-known/jwks.json` JWKS endpoint (RFC 7517)
+- This asymmetric approach ensures that only the auth service can create valid tokens; the backend cannot forge tokens even if compromised
+- Key rotation requires only auth service redeployment; backend caches the JWKS key at startup
 
 ## CORS Configuration
 CORS is configured to accept requests from the frontend URL (default: `http://localhost:3000`) with credentials enabled. Allowed methods include GET, POST, PUT, DELETE, and OPTIONS. This enables secure cross-origin communication whilst preventing unauthorised access.
 
 ## Authentication Flow
-1. User initiates OAuth login (GitHub, Microsoft Entra ID, or email/password)
-2. Spring Security handles OAuth callback from the selected provider
-3. Backend extracts user attributes using provider-agnostic logic
-4. Backend generates access and refresh tokens with user claims
-5. Tokens are set as httpOnly cookies
-6. User is redirected to frontend dashboard
-7. Subsequent requests include cookies automatically
-8. JWT filter validates access tokens on protected endpoints
+The authentication flow involves the auth service (port 8081) handling all identity operations:
+
+1. User initiates OAuth login or email/password authentication on the frontend (port 3000)
+2. Frontend redirects to the **auth service** (port 8081) for OAuth providers, or calls the auth service login endpoint directly for email/password
+3. For OAuth: Auth service's `CustomOAuth2AuthorizationRequestResolver` validates the `redirect_uri` parameter and encodes it into the OAuth2 state (Base64-encoded after the `:` separator)
+4. Auth service redirects the browser to the selected OAuth provider; user approves the scope request
+5. OAuth provider redirects back to auth service: `/login/oauth2/code/{registrationId}`
+6. Auth service's `OAuth2AuthenticationSuccessHandler` extracts user attributes, generates **RS256-signed JWTs** (access token + refresh token), stores the hashed refresh token in MongoDB, sets both tokens as httpOnly cookies, decodes the `redirect_uri` from the OAuth2 state, and redirects the browser to `{redirectUrl}/dashboard`
+7. For local auth: Auth service validates credentials, generates RS256-signed JWTs, stores refresh token, sets cookies, and redirects
+8. Frontend's Next.js middleware validates the presence of the `jwt` cookie to protect the dashboard route
+9. The `AuthContext` calls `/api/auth/status` against the auth service (port 8081) to hydrate UI with user information
+10. Subsequent API calls to the backend (port 8080) automatically include the `jwt` cookie
+11. Backend's `JwtAuthenticationFilter` verifies the access token using the public key fetched from auth service's JWKS endpoint at startup
 
 ## Token Refresh Flow
-1. Frontend detects expired access token (`401` response)
-2. Frontend calls refresh endpoint with refresh token cookie
-3. Backend validates refresh token from database
-4. Backend generates new access token
-5. New access token is set as httpOnly cookie
-6. Original request is retried with new token
+The token refresh flow is initiated by the frontend's API client when the backend (port 8080) returns a 401 response:
+
+1. Frontend's API client makes a request to the backend (port 8080) for protected data
+2. Backend verifies the access token using the public key from the auth service's JWKS endpoint; if expired or invalid, returns 401
+3. Frontend's `apiClient` 401 interceptor detects the failure (with a guard to prevent retry loops)
+4. Interceptor queues any concurrent requests and calls `authClient` to the **auth service** (port 8081): `POST /api/auth/refresh`
+5. Auth service reads the `refresh_token` cookie, validates it against the stored hash in MongoDB, and checks it hasn't expired
+6. Auth service generates a **new RS256-signed access token** and sets it as a fresh httpOnly cookie
+7. If `rotationEnabled` is configured: Auth service deletes the old refresh token from MongoDB, generates a new refresh token, stores it hashed, and sets it as a new httpOnly cookie
+8. Frontend's interceptor resolves the queued requests and replays them to the backend with the new access token
+9. Subsequent requests succeed with the new access token
+10. If refresh token is invalid or expired, a `auth:session-expired` event is dispatched and the user is redirected to the login page
 
 ## Logout Flow
-1. User initiates logout
-2. Backend retrieves both tokens from cookies
-3. Access token is added to invalidation list in MongoDB
-4. Refresh token is deleted from database
-5. Both cookies are deleted
-6. User is redirected to login page
+The logout flow revokes both tokens and ends the user session:
+
+1. User clicks the logout button on the frontend
+2. Frontend calls `logout()` which posts to the **auth service** (port 8081): `POST /logout`
+3. Auth service's logout handler extracts both the `jwt` (access token) and `refresh_token` from cookies
+4. Auth service adds the access token to the `invalidated_access_tokens` collection in MongoDB with the current timestamp and expiry date
+5. Auth service deletes the refresh token from the `refresh_tokens` collection in MongoDB
+6. Auth service clears both cookies by setting them to `maxAge=0`
+7. Auth service returns a success response
+8. Frontend redirects the user to the login page (`/`)
 
 # Setting Up Project
 These are the steps to run the full application locally.
@@ -143,36 +196,36 @@ cd oauth-springboot-nextjs
 ```
 
 ## 2. Set Up MongoDB
-Ensure MongoDB is running locally on `mongodb://localhost:27017` or configure your MongoDB connection string. The application will automatically create the required collections and indexes.
+Ensure MongoDB is running locally on `mongodb://localhost:27018` (required by the auth service only). The auth service will automatically create the required collections and indexes. The backend API does not use MongoDB and requires no database configuration.
 
 ## 3. Create OAuth Applications (Optional)
-You can configure one or both OAuth providers. If you only want to support one provider, simply remove the other provider's configuration block from `application.yaml`:
+OAuth applications are configured in the auth service (`authentication/application.yaml`), not the backend API. You can configure one or both OAuth providers. If you only want to support one provider, simply remove the other provider's configuration block from the auth service's `application.yaml`:
 
 ### GitHub OAuth Application
 Create a GitHub OAuth application with the following settings:
-- **Homepage URL**: `http://localhost:8080`
-- **Authorisation callback URL**: `http://localhost:8080/login/oauth2/code/github`
+- **Homepage URL**: `http://localhost:8081`
+- **Authorisation callback URL**: `http://localhost:8081/login/oauth2/code/github`
 
 Note your Client ID and Client Secret for the next step.
 
 ### Microsoft Entra ID App Registration
 Create an Entra ID app registration with the following settings:
-- **Redirect URI (SPA)**: `http://localhost:8080/login/oauth2/code/azure`
+- **Redirect URI (SPA)**: `http://localhost:8081/login/oauth2/code/azure`
 - **Supported account types**: Single tenant or multitenant as required
 - **API permissions**: `openid`, `profile`, `email`, `offline_access`
 - **Authentication**: Enable PKCE and implicit flow for SPA
 
 Note your Application (client) ID, Client Secret (create one in Certificates & secrets), and Directory (tenant) ID.
 
-**For Production**: Update redirect URIs to your production domain (e.g., `https://yourdomain.com` instead of `http://localhost:8080`).
+**For Production**: Update redirect URIs to your production domain (e.g., `https://yourdomain.com` instead of `http://localhost:8081`).
 
-## 4. Configure Backend
-Navigate to the backend directory and copy the `example.application.yaml` file, renaming it to `application.yaml`:
+## 4. Configure Auth Service
+Navigate to the `authentication` directory and create or update the `application.yaml` file with your OAuth credentials and configuration:
 
 ```yaml
 spring:
   application:
-    name: oauth
+    name: auth
   security:
     oauth2:
       client:
@@ -196,126 +249,191 @@ spring:
             issuer-uri: https://login.microsoftonline.com/TENANT_ID_HERE/v2.0
   data:
     mongodb:
-      uri: MONGODB_URI_HERE
-      # Alternative configuration:
-      # host: localhost
-      # port: 27017
-      # database: oauth_app
+      uri: mongodb://localhost:27018/auth_db
 
 server:
-  port: 8080
+  port: 8081
 
-# JWT Configuration
+# JWT Configuration - RS256 RSA Asymmetric Signing
 jwt:
-  secret: JTW_SECRET_HERE_256
-  expiration: 86400000  # 24 hours in milliseconds
-  access-token-expiration: 900000  # 15 minutes in milliseconds
+  private-key-path: keys/auth-private.pem  # PKCS8 PEM RSA private key for signing
+  public-key-path: keys/auth-public.pem    # X509 PEM RSA public key (served via JWKS endpoint)
+  access-token-expiration: 900000    # 15 minutes in milliseconds
   refresh-token-expiration: 604800000  # 7 days in milliseconds
 
-# Frontend URL for redirects
-frontend:
-  url: http://localhost:3000
+# Auth service allowed origins and redirect URIs
+auth:
+  allowed-origins:
+    - http://localhost:3000
+    - http://localhost:8080
+  allowed-redirect-urls:
+    - http://localhost:3000
 
+# Cookie security settings
 cookie:
   secure: false  # Set to true in production (requires HTTPS)
   same-site: Lax  # Options: Strict, Lax, None
 
+# Token security and rotation
 app:
   security:
     local-auth:
-      enabled: true # Set to false to disable email/password login
+      enabled: true  # Set to false to disable email/password login/signup
     refresh-token:
-      hashing-enabled: true
-      rotation-enabled: true
+      hashing-enabled: true  # SHA-256 hash tokens before storing in MongoDB
+      rotation-enabled: true  # Issue new refresh token on each use and revoke old one
 ```
 
-### Configuration Parameters
+### Auth Service Configuration Parameters
 
 `spring.security.oauth2.client.registration.github`:
-- `client-id`: Your GitHub OAuth application Client ID obtained from GitHub Developer Settings
-- `client-secret`: Your GitHub OAuth application Client Secret obtained from GitHub Developer Settings
-- `scope`: OAuth scopes requesting access to user profile and email information
+- `client-id`: Your GitHub OAuth application Client ID from GitHub Developer Settings
+- `client-secret`: Your GitHub OAuth application Client Secret
+- `scope`: OAuth scopes requesting access to user profile and email
 
 `spring.security.oauth2.client.registration.azure`:
 - `client-id`: Your Microsoft Entra ID Application (client) ID from Azure Portal
-- `client-secret`: Your Microsoft Entra ID Client Secret created in Certificates & secrets
-- `scope`: OIDC scopes for user profile, email, and offline access (refresh tokens)
+- `client-secret`: Your Microsoft Entra ID Client Secret from Certificates & secrets
+- `scope`: OIDC scopes for authentication (openid, profile, email, offline_access for refresh tokens)
 
 `spring.security.oauth2.client.provider.azure`:
-- `issuer-uri`: Microsoft identity platform issuer URI containing your Tenant ID
+- `issuer-uri`: Microsoft identity platform issuer URI containing your Tenant ID for token validation
 
 `spring.data.mongodb`:
-- `uri`: MongoDB connection string specifying the database location and name (e.g., `mongodb://localhost:27017/oauth_db`)
+- `uri`: MongoDB connection string pointing to auth service database (default: `mongodb://localhost:27018/auth_db`)
 
 `jwt`:
-- `secret`: Secret key for signing JWT tokens (minimum 32 characters for HS256 algorithm)
-- `access-token-expiration`: Lifespan of access tokens in milliseconds (default: 900000 = 15 minutes)
-- `refresh-token-expiration`: Lifespan of refresh tokens in milliseconds (default: 604800000 = 7 days)
+- `private-key-path`: Path to RSA private key in PKCS8 PEM format (auth service uses this to sign all JWTs)
+- `public-key-path`: Path to RSA public key in X509 PEM format (served via `/.well-known/jwks.json` for backend verification)
+- `access-token-expiration`: Lifespan of short-lived access tokens in milliseconds (default: 900000 = 15 minutes)
+- `refresh-token-expiration`: Lifespan of long-lived refresh tokens in milliseconds (default: 604800000 = 7 days)
 
-`frontend`:
-- `url`: The URL of your frontend application for CORS configuration and redirects (e.g., `http://localhost:3000`)
+`auth.allowed-origins`:
+- CORS allowed origins list for requests from frontend and backend
+
+`auth.allowed-redirect-urls`:
+- Whitelist of post-authentication redirect URIs; OAuth2 state contains Base64-encoded user-supplied `redirect_uri` validated against this list
 
 `cookie`:
-- `secure`: Whether cookies should only be sent over HTTPS (set to `false` for local development, `true` for production)
-- `same-site`: Cookie SameSite attribute for CSRF protection (use `Lax` or `Strict`)
+- `secure`: Whether cookies require HTTPS (set to `false` for local development, `true` for production)
+- `same-site`: SameSite attribute for CSRF protection
 
-`app.security.local-auth`:
-- `enabled`: Enables or disables email/password authentication (set to `true` to enable)
+`app.security.local-auth.enabled`:
+- Toggles email/password login/signup endpoints (set to `true` to enable, `false` for OAuth-only)
 
 `app.security.refresh-token`:
-- `hashing-enabled`: Stores refresh tokens as SHA-256 hashes in MongoDB when `true` (recommended for production)
-- `rotation-enabled`: Issues a brand new refresh token on every refresh request and revokes the old one when `true`
+- `hashing-enabled`: SHA-256 hash refresh tokens before storing in MongoDB (recommended for production)
+- `rotation-enabled`: Issue a new refresh token and revoke the old one on each refresh use (recommended for enhanced security)
 
-**For Production**: 
+## 5. Configure Backend API
+Navigate to the `backend` directory and create or update the `application.yaml` file:
+
+```yaml
+spring:
+  application:
+    name: oauth
+
+server:
+  port: 8080
+
+# Auth service JWKS endpoint for token verification
+auth:
+  service:
+    jwks-url: http://localhost:8081  # Base URL of auth service; backend will fetch /.well-known/jwks.json at startup
+
+# Frontend URL for CORS configuration
+frontend:
+  url: http://localhost:3000
+```
+
+### Backend API Configuration Parameters
+
+`server.port`:
+- The port on which the stateless backend API listens (default: 8080)
+
+`auth.service.jwks-url`:
+- Base URL of the auth service; backend fetches the JWKS endpoint (`/.well-known/jwks.json`) at startup using Spring's `@PostConstruct` to obtain the RSA public key for JWT verification
+- **Important**: The auth service must be running before the backend starts; failure to fetch the JWKS causes the backend to fail fast on startup
+
+`frontend.url`:
+- CORS allowed origin for requests from the frontend (e.g., `http://localhost:3000`)
+
+**Backend API Notes**:
+- The backend has **no database** and is completely **stateless**
+- Token verification relies entirely on RS256 public key fetched from auth service's JWKS endpoint
+- Protected endpoints check the `type="access"` claim to reject malformed or refresh tokens
+- Refresh token blacklist checks are NOT performed by the backend (no MongoDB access); only the auth service maintains the invocation list
+
+**For Production** (Both Services):
+- Generate RSA key pair (auth service): `openssl genpkey -algorithm RSA -out keys/auth-private.pem && openssl rsa -in keys/auth-private.pem -pubout -out keys/auth-public.pem`
 - Set `cookie.secure` to `true`
-- Update `frontend.url` to your production frontend domain
-- Use a strong, randomly generated `jwt.secret`
+- Set `auth.allowed-origins` and `auth.allowed-redirect-urls` to your production domain
 - Configure MongoDB with authentication and SSL/TLS
+- Configure `auth.service.jwks-url` to point to the production auth service
 
-## 5. Configure Frontend
-Navigate to the frontend directory, copy the `.env.example` file and rename it to `.env.local`:
+## 6. Configure Frontend
+Navigate to the `frontend` directory, create a `.env.local` file with the following environment variables:
 
 ```env
+NEXT_PUBLIC_AUTH_URL='http://localhost:8081'
 NEXT_PUBLIC_API_URL='http://localhost:8080'
 NODE_ENV='development'
 ```
 
 Configuration parameters:
-- `NEXT_PUBLIC_API_URL`: Your backend API URL (default: `http://localhost:8080`)
+- `NEXT_PUBLIC_AUTH_URL`: Base URL of the auth service (default: `http://localhost:8081`). Used by `authClient` for authentication calls and OAuth2 redirect construction
+- `NEXT_PUBLIC_API_URL`: Base URL of the backend API (default: `http://localhost:8080`). Used by `apiClient` for application data requests
 - `NODE_ENV`: Environment setting (`development` or `production`)
 
-## 6. Install Frontend Dependencies
+**Frontend Notes**:
+- The frontend uses **two separate Axios clients**:
+  - `authClient`: Points to the auth service (8081) for authentication, token refresh, provider discovery, and OAuth2 flows
+  - `apiClient`: Points to the backend API (8080) for application data; includes a 401 interceptor that delegates token refresh to `authClient`
+
+## 7. Install Frontend Dependencies
 ```sh
 cd frontend
 npm install
 ```
 
-## 7. Build the Backend
+## 8. Build the Services
 ```sh
-cd backend
+# Build auth service
+cd authentication
+./gradlew build
+
+# Build backend API
+cd ../backend
 ./gradlew build
 ```
 
-## 8. Run the Application
+## 9. Run the Application
 
-### Start the Backend
+**IMPORTANT**: The services must be started in this specific order, as the backend depends on the auth service being available to fetch the JWKS endpoint at startup.
+
+### Start Auth Service (First)
+In a terminal:
+```sh
+cd authentication
+./gradlew bootRun
+```
+
+The auth service should now be running on `http://localhost:8081`. Wait for it to fully start before proceeding.
+
+### Start Backend API (Second)
+In a new terminal:
 ```sh
 cd backend
 ./gradlew bootRun
 ```
 
-The backend should now be running on `http://localhost:8080`
+The backend will fetch the JWKS endpoint from the auth service at startup (`http://localhost:8081/.well-known/jwks.json`). If the auth service is not running, the backend will fail to start. Once running, the backend should be available on `http://localhost:8080`.
 
-### Start the Frontend
-In a new terminal:
+### Start Frontend (Third)
+In another new terminal:
 ```sh
 cd frontend
 npm run dev
-```
-
-Alternatively, you can build and start the frontend:
-```sh
-npm run build-start
 ```
 
 The frontend should now be running on `http://localhost:3000`
@@ -326,16 +444,18 @@ The frontend should now be running on `http://localhost:3000`
 
 ### OAuth Authentication
 1. Navigate to the home page at `http://localhost:3000`
-2. The application automatically fetches the list of enabled OAuth providers from the backend
+2. The application automatically fetches the list of enabled OAuth providers from the **auth service** (`http://localhost:8081/api/auth/providers`)
 3. Click either the **"Sign in with GitHub"** or **"Sign in with Microsoft"** button (or any other enabled provider)
-4. Authorise the application with your chosen provider
-5. You will be redirected to the dashboard upon successful authentication
+4. You will be redirected to the auth service to complete the OAuth flow with your chosen provider
+5. After authorisation, the auth service redirects you to the dashboard on the frontend
+6. You will be redirected to the dashboard upon successful authentication
 
 ### Email/Password Authentication
-If enabled on the backend:
+If enabled on the auth service:
 1. Navigate to the home page at `http://localhost:3000`
 2. Use the email/password form to sign up or log in
-3. You will be redirected to the dashboard upon successful authentication
+3. Authentication is handled by the **auth service** (`http://localhost:8081`)
+4. You will be redirected to the dashboard upon successful authentication
 
 ## Accessing Protected Routes
 The dashboard at `/dashboard` is a protected route. Attempting to access it without authentication will redirect you to the login page.
@@ -343,54 +463,37 @@ The dashboard at `/dashboard` is a protected route. Attempting to access it with
 ## Performing Protected Actions
 On the dashboard, you can:
 - View your OAuth provider profile information (GitHub, Microsoft, or local account)
-- Access protected data from the backend
+- Access protected data from the backend API
 - Perform authenticated actions using the action buttons
 - Log out to end your session
 
-## Using Backend API Directly
+## API Endpoints
 
-### Get User Information
+### Auth Service Endpoints (Port 8081)
+
+#### Token Refresh
+When access token expires, the frontend automatically calls the **auth service** to obtain a new access token:
 ```http
-GET /api/user
-Cookie: jwt=<access_token>
-```
-
-### Get Protected Data
-```http
-GET /api/protected/data
-Cookie: jwt=<access_token>
-```
-
-### Perform Action
-```http
-POST /api/protected/action
-Cookie: jwt=<access_token>
-Content-Type: application/json
-
-{
-  "action": "refresh_data"
-}
-```
-
-### Token Refresh
-When access token expires:
-```http
-POST /api/auth/refresh
+POST http://localhost:8081/api/auth/refresh
 Cookie: refresh_token=<refresh_token>
 ```
 
-### Check Authentication Status
+The auth service validates the refresh token, issues a new access token, and optionally rotates the refresh token. The frontend's `apiClient` interceptor handles this automatically.
+
+#### Check Authentication Status
 ```http
-GET /api/auth/status
+GET http://localhost:8081/api/auth/status
 Cookie: jwt=<access_token>
 ```
 
-### Discover Available Providers
+Returns the current authentication status and user information from the **auth service**.
+
+#### Discover Available Providers
 ```http
-GET /api/auth/providers
+GET http://localhost:8081/api/auth/providers
 ```
 
-Returns available OAuth providers:
+Returns available OAuth providers from the **auth service**:
 ```json
 [
   {
@@ -408,11 +511,9 @@ Returns available OAuth providers:
 ]
 ```
 
-### Local Authentication Endpoints
-
-**Signup**
+#### Local Auth — Signup
 ```http
-POST /api/auth/signup
+POST http://localhost:8081/api/auth/signup
 Content-Type: application/json
 
 {
@@ -422,9 +523,9 @@ Content-Type: application/json
 }
 ```
 
-**Login**
+#### Local Auth — Login
 ```http
-POST /api/auth/login
+POST http://localhost:8081/api/auth/login
 Content-Type: application/json
 
 {
@@ -433,19 +534,46 @@ Content-Type: application/json
 }
 ```
 
-### Logging Out
+#### Logout
 ```http
-POST /logout
+POST http://localhost:8081/logout
 Cookie: jwt=<access_token>; refresh_token=<refresh_token>
 ```
 
-### Public Health Check
+### Backend API Endpoints (Port 8080)
+
+All backend endpoints require the `jwt` access token cookie and return `401 Unauthorized` if the access token is missing or invalid.
+
+#### Get User Information
 ```http
-GET /api/public/health
+GET http://localhost:8080/api/user
+Cookie: jwt=<access_token>
+```
+
+#### Get Protected Data
+```http
+GET http://localhost:8080/api/protected/data
+Cookie: jwt=<access_token>
+```
+
+#### Perform Action
+```http
+POST http://localhost:8080/api/protected/action
+Cookie: jwt=<access_token>
+Content-Type: application/json
+
+{
+  "action": "refresh_data"
+}
+```
+
+#### Public Health Check
+```http
+GET http://localhost:8080/api/public/health
 ```
 
 ## Token Management
-The application automatically handles token refresh. When your access token expires, the system will use your refresh token to obtain a new access token without requiring re-authentication.
+The application automatically handles token refresh. When your access token expires, the frontend's `apiClient` interceptor calls the auth service to obtain a new access token without requiring re-authentication.
 
 # References
 - [Next.js Documentation](https://nextjs.org/docs)

@@ -1,4 +1,4 @@
-import { apiClient } from '../../api-client';
+import { authClient } from "../../auth-client";
 
 /**
  * Creates a local account with email, password, and name.
@@ -8,7 +8,11 @@ import { apiClient } from '../../api-client';
  * @returns Promise that resolves after redirect.
  * @author Maruf Bepary
  */
-export async function signupWithEmail(email: string, password: string, name: string): Promise<void> {
-  await apiClient.post('/api/auth/signup', { email, password, name });
-  window.location.href = '/dashboard';
+export async function signupWithEmail(
+  email: string,
+  password: string,
+  name: string,
+): Promise<void> {
+  await authClient.post("/api/auth/signup", { email, password, name });
+  window.location.href = "/dashboard";
 }

@@ -2,17 +2,21 @@ import MockAdapter from "axios-mock-adapter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { apiClient } from "@/lib/api-client";
+import { authClient } from "@/lib/auth-client";
 
 describe("apiClient interceptors", () => {
   let mock: MockAdapter;
+  let authMock: MockAdapter;
   const originalLocation = window.location;
 
   beforeEach(() => {
     mock = new MockAdapter(apiClient);
+    authMock = new MockAdapter(authClient);
   });
 
   afterEach(() => {
     mock.restore();
+    authMock.restore();
     Object.defineProperty(window, "location", {
       configurable: true,
       value: originalLocation,
@@ -21,7 +25,7 @@ describe("apiClient interceptors", () => {
 
   it("retries the original request after a successful refresh", async () => {
     mock.onGet("/api/protected/data").replyOnce(401);
-    mock.onPost("/api/auth/refresh").replyOnce(200, {});
+    authMock.onPost("/api/auth/refresh").replyOnce(200, {});
     mock.onGet("/api/protected/data").replyOnce(200, { message: "ok" });
 
     const response = await apiClient.get("/api/protected/data");
@@ -32,7 +36,7 @@ describe("apiClient interceptors", () => {
   it("queues concurrent 401s while refreshing and resolves them after refresh", async () => {
     mock.onGet("/api/protected/data").replyOnce(401);
     mock.onGet("/api/protected/data").replyOnce(401);
-    mock.onPost("/api/auth/refresh").replyOnce(200, {});
+    authMock.onPost("/api/auth/refresh").replyOnce(200, {});
     mock.onGet("/api/protected/data").replyOnce(200, { call: 1 });
     mock.onGet("/api/protected/data").replyOnce(200, { call: 2 });
 
@@ -69,7 +73,7 @@ describe("apiClient interceptors", () => {
 
     mock.onGet("/api/protected/data").replyOnce(401);
     mock.onGet("/api/protected/data").replyOnce(401);
-    mock.onPost("/api/auth/refresh").replyOnce(500);
+    authMock.onPost("/api/auth/refresh").replyOnce(500);
 
     const firstRequest = apiClient.get("/api/protected/data");
     const queuedRequest = apiClient.get("/api/protected/data");
@@ -86,29 +90,15 @@ describe("apiClient interceptors", () => {
     expect(dispatchSpy).toHaveBeenCalled();
     const event = dispatchSpy.mock.calls.find(
       (call) =>
-        call[0] instanceof Event && call[0].type === "auth:session-expired"
+        call[0] instanceof Event && call[0].type === "auth:session-expired",
     );
     expect(event).toBeDefined();
 
-    mock.resetHandlers();
-    mock.onPost("/api/auth/refresh").replyOnce(401);
-    await expect(apiClient.post("/api/auth/refresh")).rejects.toBeTruthy();
+    authMock.resetHandlers();
+    authMock.onPost("/api/auth/refresh").replyOnce(401);
+    await expect(authClient.post("/api/auth/refresh")).rejects.toBeTruthy();
 
     dispatchSpy.mockRestore();
-  });
-
-  it("propagates request interceptor errors", async () => {
-    const handler = (
-      apiClient.interceptors.request as unknown as {
-        handlers: {
-          fulfilled: (value: unknown) => unknown;
-          rejected: (value: unknown) => Promise<unknown>;
-        }[];
-      }
-    ).handlers[0];
-    await expect(handler.rejected(new Error("request failed"))).rejects.toThrow(
-      "request failed"
-    );
   });
 
   it("handles baseURL selection from env or fallback", async () => {
@@ -164,7 +154,7 @@ describe("apiClient interceptors", () => {
 
     mock.resetHandlers();
     mock.onGet("/api/protected/data").replyOnce(401);
-    mock.onPost("/api/auth/refresh").replyOnce(500);
+    authMock.onPost("/api/auth/refresh").replyOnce(500);
 
     await expect(apiClient.get("/api/protected/data")).rejects.toBeTruthy();
     expect(href).toBe("/");

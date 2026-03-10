@@ -1,3 +1,7 @@
+/**
+ * Schema for data returned by protected API endpoints such as
+ * `/api/protected/data`.  Includes optional nested fields.
+ */
 import { z } from "zod";
 
 export const ProtectedDataSchema = z.object({

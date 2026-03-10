@@ -1,4 +1,4 @@
-import { apiClient } from '../api-client';
+import { authClient } from "../auth-client";
 
 /**
  * Ends the session and routes back to the home page.
@@ -8,10 +8,10 @@ import { apiClient } from '../api-client';
  */
 export async function logout() {
   try {
-    await apiClient.post('/logout');
-    window.location.href = '/';
+    await authClient.post("/logout");
+    window.location.href = "/";
   } catch (error) {
-    console.error('Logout failed:', error);
-    window.location.href = '/';
+    console.error("Logout failed:", error);
+    window.location.href = "/";
   }
 }
