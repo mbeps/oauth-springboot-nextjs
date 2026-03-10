@@ -103,7 +103,6 @@ public class SecurityConfig {
 	private final HttpCookieOAuth2AuthorizationRequestRepository authorizationRequestRepository;
 	private final ClientRegistrationRepository clientRegistrationRepository;
 
-	@Bean
 	/**
 	 * Password encoder bean used for local authentication.
 	 * <p>
@@ -117,7 +116,6 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
-	@Bean
 	/**
 	 * Creates the custom OAuth2 authorization request resolver that understands
 	 * the {@code redirect_uri} query parameter and enforces the whitelist of
@@ -132,7 +130,6 @@ public class SecurityConfig {
 				authSecurityProperties.getAllowedRedirectUrls());
 	}
 
-	@Bean
 	/**
 	 * Defines the main security filter chain for HTTP requests.
 	 * <p>
@@ -203,7 +200,6 @@ public class SecurityConfig {
 		return http.build();
 	}
 
-	@Bean
 	/**
 	 * CORS configuration source allowing origins defined in
 	 * {@link AuthSecurityProperties#getAllowedOrigins()} and standard HTTP
@@ -224,7 +220,6 @@ public class SecurityConfig {
 		return source;
 	}
 
-	@Bean
 	/**
 	 * Custom authentication entry point that returns JSON 401 responses for
 	 * API endpoints and redirects to the login page for browser requests.
