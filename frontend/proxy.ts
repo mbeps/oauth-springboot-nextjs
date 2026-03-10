@@ -9,7 +9,7 @@ import { publicRoutes, protectedRoutes } from "./routes";
  * @returns Response that continues or redirects the request.
  * @author Maruf Bepary
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check if route is public
@@ -46,7 +46,7 @@ export function middleware(request: NextRequest) {
 }
 
 /**
- * Matcher config to scope middleware execution.
+ * Matcher config to scope proxy execution.
  * @author Maruf Bepary
  */
 export const config = {

@@ -203,7 +203,7 @@ jobs:
       needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
-        node-version: [22.13.0]
+        node-version: [22.13.0] # Node 22+ required by Next.js 16
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -219,7 +219,7 @@ jobs:
         working-directory: ./frontend
         run: yarn install --frozen-lockfile
 
-      - name: Run Linter
+      - name: Run Linter (ESLint only - Next.js 16 removed `next lint`)
         working-directory: ./frontend
         run: yarn lint
 
@@ -233,7 +233,7 @@ jobs:
       needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
-        node-version: [22.13.0]
+        node-version: [22.13.0] # Node 22+ required by Next.js 16
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -265,7 +265,7 @@ jobs:
       needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
-        node-version: [22.13.0]
+        node-version: [22.13.0] # Node 22+ required by Next.js 16
     steps:
       - name: Checkout
         uses: actions/checkout@v4

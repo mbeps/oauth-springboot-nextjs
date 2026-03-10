@@ -62,7 +62,7 @@ Health check and discovery endpoints for monitoring:
 # Requirements
 These are the requirements needed to run the project:
 - Node.js 22 LTS or higher
-- Java 17 or higher (required for Spring Boot 4.0.3)
+- Java 21 or higher
 - MongoDB 4.4 or higher (required for the auth service only; backend API is stateless with no database)
 - OAuth Application credentials for one or both providers (configured in the auth service):
   - **GitHub OAuth Application** (Client ID and Client Secret)
