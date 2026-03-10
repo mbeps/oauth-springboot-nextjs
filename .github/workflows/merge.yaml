@@ -19,14 +19,38 @@ on:
       - '.github/workflows/**'
 
 jobs:
+  # Job to check which parts of the monorepo have changed
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth: ${{ steps.filter.outputs.auth }}
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            auth:
+              - 'authentication/**'
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            workflows:
+              - '.github/workflows/**'
+
   # --- Authentication Service Jobs ---
   auth-build:
     name: Auth Build (JDK ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+    needs: changes
     if: |
       github.event_name == 'push' ||
-      contains(github.event.pull_request.changed_files, 'authentication/') ||
-      contains(github.event.pull_request.changed_files, '.github/workflows/')
+      needs.changes.outputs.auth == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
         java-version: [17, 21, 25]
@@ -97,10 +121,11 @@ jobs:
   backend-build:
     name: Backend Build (JDK ${{ matrix.java-version }})
     runs-on: ubuntu-latest
+    needs: changes
     if: |
       github.event_name == 'push' ||
-      contains(github.event.pull_request.changed_files, 'backend/') ||
-      contains(github.event.pull_request.changed_files, '.github/workflows/')
+      needs.changes.outputs.backend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
         java-version: [17, 21, 25]
@@ -171,10 +196,11 @@ jobs:
   frontend-lint:
     name: Frontend Lint
     runs-on: ubuntu-latest
+    needs: changes
     if: |
       github.event_name == 'push' ||
-      contains(github.event.pull_request.changed_files, 'frontend/') ||
-      contains(github.event.pull_request.changed_files, '.github/workflows/')
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
         node-version: [22.13.0]
@@ -200,11 +226,11 @@ jobs:
   frontend-test:
     name: Frontend Test
     runs-on: ubuntu-latest
-    needs: frontend-lint
+    needs: [changes, frontend-lint]
     if: |
       github.event_name == 'push' ||
-      contains(github.event.pull_request.changed_files, 'frontend/') ||
-      contains(github.event.pull_request.changed_files, '.github/workflows/')
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
         node-version: [22.13.0]
@@ -232,11 +258,11 @@ jobs:
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
-    needs: [frontend-lint, frontend-test]
+    needs: [changes, frontend-lint, frontend-test]
     if: |
       github.event_name == 'push' ||
-      contains(github.event.pull_request.changed_files, 'frontend/') ||
-      contains(github.event.pull_request.changed_files, '.github/workflows/')
+      needs.changes.outputs.frontend == 'true' ||
+      needs.changes.outputs.workflows == 'true'
     strategy:
       matrix:
         node-version: [22.13.0]
