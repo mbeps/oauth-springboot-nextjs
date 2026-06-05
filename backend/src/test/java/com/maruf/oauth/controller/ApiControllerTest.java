@@ -1,19 +1,20 @@
 package com.maruf.oauth.controller;
 
-import tools.jackson.databind.ObjectMapper;
-import com.maruf.oauth.config.JwksKeyLoader;
-import com.maruf.oauth.config.SecurityConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.maruf.oauth.config.*;
 import com.maruf.oauth.dto.ActionRequest;
 import com.maruf.oauth.dto.ProtectedDataResponse;
 import com.maruf.oauth.dto.UserResponse;
+import com.maruf.oauth.service.JwtService;
+import com.maruf.oauth.service.RefreshTokenStore;
 import com.maruf.oauth.support.TestOAuth2Users;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
@@ -28,14 +29,47 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class ApiControllerTest {
 
-        @MockitoBean
-        private JwksKeyLoader jwksKeyLoader;
-
         @Autowired
         private MockMvc mockMvc;
 
         @Autowired
         private ObjectMapper objectMapper;
+
+        @MockitoBean
+        private JwtService jwtService;
+
+        @MockitoBean
+        private RefreshTokenStore refreshTokenStore;
+
+        @MockitoBean
+        private HttpCookieFactory cookieFactory;
+
+        @MockitoBean
+        private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+        @MockitoBean
+        private AuthSecurityProperties authSecurityProperties;
+
+        @MockitoBean
+        private CookieSecurityProperties cookieSecurityProperties;
+
+        @MockitoBean
+        private JwtSecurityProperties jwtSecurityProperties;
+
+        @MockitoBean
+        private RefreshTokenSecurityProperties refreshTokenSecurityProperties;
+
+        @MockitoBean
+        private CustomOAuth2AuthorizationRequestResolver oauth2RequestResolver;
+
+        @MockitoBean
+        private HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
+
+        @MockitoBean
+        private OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
+
+        @MockitoBean
+        private OAuth2AuthenticationFailureHandler oauth2AuthenticationFailureHandler;
 
         @Test
         void publicHealthEndpointResponds() throws Exception {

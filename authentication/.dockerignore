@@ -1,8 +1,0 @@
-.git
-.gradle
-build/
-bin/
-logs/
-*.md
-.env
-keys/

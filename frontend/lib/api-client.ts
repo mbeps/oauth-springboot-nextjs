@@ -10,7 +10,7 @@
  * - Wraps Axios for backend API calls
  * - Automatically refreshes access tokens when 401 responses are received
  * - Queues concurrent requests that fail with 401 during an ongoing refresh
- * - Delegates token refresh to `authClient` (auth service on port 8081)
+ * - Delegates token refresh to `authClient` (unified backend on port 8080)
  * - Handles refresh failure by dispatching a global `auth:session-expired` event
  *
  * ## 401 Refresh Flow
@@ -18,7 +18,7 @@
  * 2. **Refresh Gate**: If a refresh is already in progress (`isRefreshing === true`),
  *    the request is queued and waits; otherwise, proceed to step 3
  * 3. **Token Refresh**: Call `authClient.post("/api/auth/refresh")` to get a new JWT
- *    - Note: This goes to the **auth service on port 8081**, not the backend
+ *    - Note: In the unified architecture, this goes to the same backend 8080 service
  *    - The refresh endpoint reads the `refresh_token` cookie and returns a new `jwt` cookie
  * 4. **Queue Processing**: Once the refresh succeeds, all queued requests are retried
  *    with the new token via `apiClient(originalRequest)`
@@ -39,7 +39,7 @@
  * - Public endpoints (automatically retried on token expiry) — e.g., `/api/public/health`
  *
  * Use `authClient` (from `./auth-client`) instead for:
- * - Auth service calls (port 8081) — e.g., `/api/auth/status`, `/api/auth/login`
+ * - Authentication calls (port 8080) — e.g., `/api/auth/status`, `/api/auth/login`
  * - The `authClient` has its own 401 interceptor and does not refresh (to prevent loops)
  *
  * ## Error Handling & Redirect Behavior

@@ -1,11 +1,11 @@
 /**
- * Axios instance targeting the authentication service.
+ * Axios instance targeting the authentication endpoints.
  *
  * This module exposes two helpers:
- *   - `authClient` is used for any call that belongs to the auth service
- *     (login, signup, refresh, status, providers, logout). It has its
- *     own base URL separate from the API backend and is controlled by
- *     the `NEXT_PUBLIC_AUTH_URL` environment variable.
+ *   - `authClient` is used for any call that belongs to authentication
+ *     (login, signup, refresh, status, providers, logout). In the unified
+ *     architecture, it points to the same backend 8080 service but
+ *     uses `NEXT_PUBLIC_AUTH_URL` for configuration.
  *   - `getAuthBaseUrl()` returns the same base URL and is used when
  *     constructing OAuth2 redirect URLs.
  *
