@@ -1,2 +1,5 @@
 .github/copilot-instructions.md
 .env
+
+wiki/**
+docs/**

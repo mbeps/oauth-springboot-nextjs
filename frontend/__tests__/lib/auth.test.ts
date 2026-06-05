@@ -17,8 +17,13 @@ vi.mock("@/lib/auth-client", () => ({
     get: (...args: unknown[]) => authGetMock(...args),
     post: (...args: unknown[]) => authPostMock(...args),
   },
-  getAuthBaseUrl: () =>
-    process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:8081",
+  getAuthBaseUrl: () => {
+    const url = process.env.NEXT_PUBLIC_AUTH_URL;
+    if (!url) {
+      throw new Error("NEXT_PUBLIC_AUTH_URL environment variable is missing");
+    }
+    return url;
+  },
 }));
 
 import { fetchPublicData } from "@/lib/auth/public";
@@ -188,12 +193,11 @@ describe("auth helpers", () => {
     location.restore();
   });
 
-  it("falls back to localhost base URL when config is missing", () => {
+  it("throws error when auth base URL config is missing", () => {
     const location = setMockLocation();
     process.env.NEXT_PUBLIC_AUTH_URL = "";
-    loginWithProvider("custom");
-    expect(location.getHref()).toBe(
-      "http://localhost:8081/oauth2/authorization/custom?redirect_uri=http%3A%2F%2Flocalhost%3A3000",
+    expect(() => loginWithProvider("custom")).toThrow(
+      "NEXT_PUBLIC_AUTH_URL environment variable is missing",
     );
     location.restore();
   });

@@ -101,7 +101,7 @@ describe("apiClient interceptors", () => {
     dispatchSpy.mockRestore();
   });
 
-  it("handles baseURL selection from env or fallback", async () => {
+  it("handles baseURL selection from env", async () => {
     const originalEnv = process.env.NEXT_PUBLIC_API_URL;
 
     vi.resetModules();
@@ -111,10 +111,11 @@ describe("apiClient interceptors", () => {
 
     vi.resetModules();
     process.env.NEXT_PUBLIC_API_URL = "";
-    const { apiClient: defaultClient } = await import("@/lib/api-client");
-    expect(defaultClient.defaults.baseURL).toBe("http://localhost:8080");
+    // Should now throw because the module-level guard checks if it's missing
+    await expect(import("@/lib/api-client")).rejects.toThrow(
+      "NEXT_PUBLIC_API_URL environment variable is missing",
+    );
 
-    vi.resetModules();
     process.env.NEXT_PUBLIC_API_URL = originalEnv;
   });
 

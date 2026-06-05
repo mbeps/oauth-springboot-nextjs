@@ -24,9 +24,6 @@ public class AuthServiceProperties {
 	 * The {@link JwksKeyLoader} appends {@code /.well-known/jwks.json} to this
 	 * value when fetching the RSA public key at startup. Overridable via
 	 * {@code auth.service.jwks-url} in {@code application.yaml}.
-	 *
-	 * <p>
-	 * Default: {@code http://localhost:8081} (auth service on port 8081 in dev).
 	 */
-	private String jwksUrl = "http://localhost:8081";
+	private String jwksUrl;
 }

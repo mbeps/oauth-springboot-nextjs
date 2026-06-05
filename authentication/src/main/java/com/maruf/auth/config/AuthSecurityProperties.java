@@ -39,10 +39,9 @@ public class AuthSecurityProperties {
 	 * List of origins permitted for CORS requests.
 	 * <p>
 	 * Used by Spring Security's {@code CorsConfigurationSource} to validate
-	 * incoming requests from other origins. Defaults to
-	 * {@code [http://localhost:3000]}.
+	 * incoming requests from other origins.
 	 */
-	private List<String> allowedOrigins = List.of("http://localhost:3000");
+	private List<String> allowedOrigins;
 
 	/**
 	 * List of base URLs whitelisted for OAuth2 post-login redirect.
@@ -50,8 +49,7 @@ public class AuthSecurityProperties {
 	 * Used by {@link CustomOAuth2AuthorizationRequestResolver} to validate the
 	 * {@code redirect_uri} query parameter in initial OAuth2 requests, and by
 	 * {@link OAuth2AuthenticationSuccessHandler} to decode and verify the redirect
-	 * URL from the OAuth2 state parameter. Defaults to
-	 * {@code [http://localhost:3000]}.
+	 * URL from the OAuth2 state parameter.
 	 */
-	private List<String> allowedRedirectUrls = List.of("http://localhost:3000");
+	private List<String> allowedRedirectUrls;
 }

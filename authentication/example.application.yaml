@@ -53,11 +53,8 @@ jwt:
   refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION:604800000}
 
 auth:
-  allowed-origins:
-    - ${AUTH_ALLOWED_ORIGIN_1:http://localhost:3000}
-    - ${AUTH_ALLOWED_ORIGIN_2:http://localhost:8080}
-  allowed-redirect-urls:
-    - ${AUTH_ALLOWED_REDIRECT_1:http://localhost:3000}
+  allowed-origins: [http://localhost:3000, http://localhost:8080]
+  allowed-redirect-urls: [http://localhost:3000]
 
 cookie:
   secure: ${COOKIE_SECURE:false}

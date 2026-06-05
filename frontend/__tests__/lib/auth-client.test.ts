@@ -19,9 +19,11 @@ describe("auth-client", () => {
       expect(getAuthBaseUrl()).toBe("http://my-auth-service:8081");
     });
 
-    it("returns default URL when NEXT_PUBLIC_AUTH_URL is undefined", () => {
+    it("throws error when NEXT_PUBLIC_AUTH_URL is undefined", () => {
       delete process.env.NEXT_PUBLIC_AUTH_URL;
-      expect(getAuthBaseUrl()).toBe("http://localhost:8081");
+      expect(() => getAuthBaseUrl()).toThrow(
+        "NEXT_PUBLIC_AUTH_URL environment variable is missing",
+      );
     });
   });
 
@@ -30,8 +32,7 @@ describe("auth-client", () => {
       // Note: authClient is a constant initialized at module load time.
       // Since it's already imported, changing process.env won't affect it here
       // unless we re-import the module, but let's just check its current state.
-      const expectedUrl =
-        process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:8081";
+      const expectedUrl = process.env.NEXT_PUBLIC_AUTH_URL;
       expect(authClient.defaults.baseURL).toBe(expectedUrl);
     });
 

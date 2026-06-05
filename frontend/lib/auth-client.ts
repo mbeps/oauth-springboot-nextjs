@@ -5,11 +5,9 @@
  *   - `authClient` is used for any call that belongs to the auth service
  *     (login, signup, refresh, status, providers, logout). It has its
  *     own base URL separate from the API backend and is controlled by
- *     the `NEXT_PUBLIC_AUTH_URL` environment variable (default
- *     http://localhost:8081).
+ *     the `NEXT_PUBLIC_AUTH_URL` environment variable.
  *   - `getAuthBaseUrl()` returns the same base URL and is used when
- *     constructing OAuth2 redirect URLs; it also falls back to the
- *     default when the env var is undefined.
+ *     constructing OAuth2 redirect URLs.
  *
  * Keeping authentication traffic on a dedicated client avoids circular
  * dependencies and makes it clear which calls require cookies issued
@@ -22,14 +20,17 @@ import axios from "axios";
  *
  * Used by client code that must build an OAuth2 authorization URL
  * (see `login-with-provider.ts`).  The value is taken from
- * `NEXT_PUBLIC_AUTH_URL` with a fallback of `http://localhost:8081`.
+ * `NEXT_PUBLIC_AUTH_URL`.
  */
 export function getAuthBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:8081";
+  const url = process.env.NEXT_PUBLIC_AUTH_URL;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_AUTH_URL environment variable is missing");
+  }
+  return url;
 }
 
-const AUTH_BASE_URL =
-  process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:8081";
+const AUTH_BASE_URL = getAuthBaseUrl();
 
 /**
  * Axios instance preconfigured for communicating with the auth service.

@@ -144,7 +144,37 @@ Access tokens contain user claims (ID, login, name, email, avatar URL) and a typ
 - Key rotation requires only auth service redeployment; backend caches the JWKS key at startup
 
 ## CORS Configuration
-CORS is configured to accept requests from the frontend URL (default: `http://localhost:3000`) with credentials enabled. Allowed methods include GET, POST, PUT, DELETE, and OPTIONS. This enables secure cross-origin communication whilst preventing unauthorised access.
+CORS is configured to accept requests from multiple origins (default: `http://localhost:3000` and `http://localhost:8080`) with credentials enabled. Allowed methods include GET, POST, PUT, DELETE, and OPTIONS. This enables secure cross-origin communication whilst preventing unauthorised access from unknown origins.
+
+## Multi-Service Support
+The authentication system explicitly supports multiple services calling it. Service identification is handled through two mechanisms:
+
+### CORS Origin Validation
+All requests to the auth service are validated against the `auth.allowed-origins` list configured in `application.yaml`. Each origin (frontend, backend API, or other services) must be whitelisted for CORS requests to succeed. This prevents unauthorised services from accessing auth endpoints. The default configuration includes:
+- Frontend: `http://localhost:3000` (or customised via `AUTH_ALLOWED_ORIGIN_1`)
+- Backend API: `http://localhost:8080` (or customised via `AUTH_ALLOWED_ORIGIN_2`)
+
+### OAuth2 Redirect URI Validation
+When initiating an OAuth2 flow, the `CustomOAuth2AuthorizationRequestResolver` validates the `redirect_uri` query parameter against the `auth.allowed-redirect-urls` whitelist before embedding it into the OAuth2 state parameter. This prevents open redirects and ensures users are redirected only to whitelisted frontend origins after authentication.
+
+### How Services Are Identified
+Services are identified by their origin URL (the scheme, domain, and port). The auth service requires **no per-service credentials or client IDs** for internal API validation—origin-based validation is sufficient. To add a new service:
+1. Add its origin to `auth.allowed-origins` (for CORS validation)
+2. Add its redirect base URL to `auth.allowed-redirect-urls` (for OAuth2 flows)
+3. The auth service validates all requests against these whitelists at runtime
+
+### Configuration Example: Multi-Origin Deployment
+```yaml
+auth:
+  allowed-origins:
+    - http://localhost:3000         # Frontend (development)
+    - http://localhost:8080         # Backend API (development)
+    - https://app.example.com       # Frontend (production)
+    - https://api.example.com       # Backend API (production)
+  allowed-redirect-urls:
+    - http://localhost:3000
+    - https://app.example.com
+```
 
 ## Authentication Flow
 The authentication flow involves the auth service (port 8081) handling all identity operations:
@@ -314,10 +344,10 @@ app:
 - `refresh-token-expiration`: Lifespan of long-lived refresh tokens in milliseconds (default: 604800000 = 7 days)
 
 `auth.allowed-origins`:
-- CORS allowed origins list for requests from frontend and backend
+- **Mandatory** CORS allowed origins list (no fallback in source code) for requests from frontend and backend
 
 `auth.allowed-redirect-urls`:
-- Whitelist of post-authentication redirect URIs; OAuth2 state contains Base64-encoded user-supplied `redirect_uri` validated against this list
+- **Mandatory** whitelist of post-authentication redirect URIs (no fallback in source code); OAuth2 state contains Base64-encoded user-supplied `redirect_uri` validated against this list
 
 `cookie`:
 - `secure`: Whether cookies require HTTPS (set to `false` for local development, `true` for production)
@@ -369,7 +399,7 @@ REFRESH_TOKEN_HASHING=true
 REFRESH_TOKEN_ROTATION=true
 ```
 
-The `application.yaml` uses `${ENV_VAR:default}` syntax to support both environment variables (for CI/CD and docker containers) and hardcoded defaults (for local development without a `.env.local` file).
+The `application.yaml` uses `${ENV_VAR:default}` syntax to support both environment variables and configuration-level defaults. **Note**: Following a security refactor, URL and service configurations (Auth Service URL, Backend API URL, Frontend URL/Origins) no longer have hardcoded fallbacks in the application source code and MUST be provided via configuration (`application.yaml` or environment variables) for the system to start correctly.
 
 ### MongoDB UUID Representation (Spring Boot 4.0)
 
@@ -412,7 +442,7 @@ frontend:
 
 ### Backend Environment Variables
 
-The backend API accepts the following environment variables (all optional with sensible defaults):
+The backend API accepts the following environment variables. **Note**: URL and JWKS configuration is now mandatory and has no hardcoded fallbacks in the source code.
 
 ```env
 # Server
@@ -451,8 +481,8 @@ NODE_ENV='development'
 ```
 
 Configuration parameters:
-- `NEXT_PUBLIC_AUTH_URL`: Base URL of the auth service (default: `http://localhost:8081`). Used by `authClient` for authentication calls and OAuth2 redirect construction. Must be accessible from the browser.
-- `NEXT_PUBLIC_API_URL`: Base URL of the backend API (default: `http://localhost:8080`). Used by `apiClient` for application data requests. Must be accessible from the browser.
+- `NEXT_PUBLIC_AUTH_URL`: Base URL of the auth service (**Mandatory**; no fallback in source code). Used by `authClient` for authentication calls and OAuth2 redirect construction. Must be accessible from the browser.
+- `NEXT_PUBLIC_API_URL`: Base URL of the backend API (**Mandatory**; no fallback in source code). Used by `apiClient` for application data requests. Must be accessible from the browser.
 - `NODE_ENV`: Environment setting (`development` or `production`) — controls Tailwind CSS tree-shaking and React warnings
 
 **Frontend Notes**:

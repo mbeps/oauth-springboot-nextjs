@@ -12,11 +12,13 @@ import { getAuthBaseUrl } from "@/lib/auth-client";
  */
 export function loginWithProvider(providerKey: string) {
   const authUrl = getAuthBaseUrl();
-  const frontendUrl =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "http://localhost:3000";
-  if (typeof window !== "undefined") {
-    window.location.href = `${authUrl}/oauth2/authorization/${providerKey}?redirect_uri=${encodeURIComponent(frontendUrl)}`;
+
+  if (typeof window === "undefined") {
+    // This function is intended to be called from a browser action.
+    // If called on the server, we don't have a reliable origin.
+    return;
   }
+
+  const frontendUrl = window.location.origin;
+  window.location.href = `${authUrl}/oauth2/authorization/${providerKey}?redirect_uri=${encodeURIComponent(frontendUrl)}`;
 }

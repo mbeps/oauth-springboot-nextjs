@@ -1,13 +1,13 @@
 /**
  * @fileoverview Backend API client with automatic JWT refresh and request queueing.
  *
- * Provides an Axios instance (`apiClient`) preconfigured for the backend API (port 8080)
+ * Provides an Axios instance (`apiClient`) preconfigured for the backend API
  * with built-in token refresh handling on 401 responses. This module implements a
  * sophisticated token refresh flow that queues concurrent requests during token refresh,
  * preventing the "thundering herd" problem when multiple API calls fail simultaneously.
  *
  * ## Module Purpose
- * - Wraps Axios for backend API calls (baseURL: `http://localhost:8080`, default)
+ * - Wraps Axios for backend API calls
  * - Automatically refreshes access tokens when 401 responses are received
  * - Queues concurrent requests that fail with 401 during an ongoing refresh
  * - Delegates token refresh to `authClient` (auth service on port 8081)
@@ -60,7 +60,10 @@
 import axios from "axios";
 import { authClient } from "./auth-client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_BASE_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL environment variable is missing");
+}
 
 /**
  * Flag set while a refresh request is in progress.
